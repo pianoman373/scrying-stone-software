@@ -5,25 +5,27 @@ import PIL
 from PIL import Image
 from PIL import ExifTags
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 #Function that Downsamples image x number (reduce_factor) of times.
 def downsample_image(image, reduce_factor):
-	for i in range(0,reduce_factor):
-		#Check if image is color or grayscale
-		if len(image.shape) > 2:
-			row,col = image.shape[:2]
-		else:
-			row,col = image.shape
+    for i in range(0,reduce_factor):
+        #Check if image is color or grayscale
+        if len(image.shape) > 2:
+            row,col = image.shape[:2]
+        else:
+            row,col = image.shape
 
-		image = cv2.pyrDown(image, dstsize= (col//2, row // 2))
-	return image
+        image = cv2.pyrDown(image, dstsize= (col//2, row // 2))
+    return image
 
 #Function to create point cloud file
 def create_output(vertices, colors, filename):
-	colors = colors.reshape(-1,3)
-	vertices = np.hstack([vertices.reshape(-1,3),colors])
+    colors = colors.reshape(-1,3)
+    vertices = np.hstack([vertices.reshape(-1,3),colors])
 
-	ply_header = '''ply
+    ply_header = '''ply
 		format ascii 1.0
 		element vertex %(vert_num)d
 		property float x
@@ -34,10 +36,10 @@ def create_output(vertices, colors, filename):
 		property uchar blue
 		end_header
 		'''
-	with open(filename, 'w') as f:
-		f.write(ply_header %dict(vert_num=len(vertices)))
-		np.savetxt(f,vertices,'%f %f %f %d %d %d')
-
+    with open(filename, 'wb') as f:
+        f.write(ply_header %dict(vert_num=len(vertices)))
+        np.savetxt(f,vertices,'%f %f %f %d %d %d')
+        #np.save(f, vertices)
 
 if __name__ == '__main__':
     # =========================================================
@@ -122,5 +124,7 @@ if __name__ == '__main__':
     # Generate point cloud
     print("\n Creating the output file... \n")
     create_output(output_points, output_colors, output_file)
+
+
 
 
