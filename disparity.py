@@ -22,10 +22,10 @@ def downsample_image(image, reduce_factor):
 
 #Function to create point cloud file
 def create_output(vertices, colors, filename):
-    colors = colors.reshape(-1,3)
-    vertices = np.hstack([vertices.reshape(-1,3),colors])
+	colors = colors.reshape(-1,3)
+	vertices = np.hstack([vertices.reshape(-1,3),colors])
 
-    ply_header = '''ply
+	ply_header = '''ply
 		format ascii 1.0
 		element vertex %(vert_num)d
 		property float x
@@ -36,10 +36,9 @@ def create_output(vertices, colors, filename):
 		property uchar blue
 		end_header
 		'''
-    with open(filename, 'wb') as f:
-        f.write(ply_header %dict(vert_num=len(vertices)))
-        np.savetxt(f,vertices,'%f %f %f %d %d %d')
-        #np.save(f, vertices)
+	with open(filename, 'w') as f:
+		f.write(ply_header %dict(vert_num=len(vertices)))
+		np.savetxt(f,vertices,'%f %f %f %d %d %d')
 
 if __name__ == '__main__':
     # =========================================================
