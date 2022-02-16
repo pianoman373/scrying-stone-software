@@ -1,14 +1,14 @@
 ply
-		format ascii 1.0
-		element vertex 65213
-		property float x
-		property float y
-		property float z
-		property uchar red
-		property uchar green
-		property uchar blue
-		end_header
-		63.000000 0.000000 15.980000 10 11 13
+        format ascii 1.0
+        element vertex 65213
+        property float x
+        property float y
+        property float z
+        property uchar red
+        property uchar green
+        property uchar blue
+        end_header
+        63.000000 0.000000 15.980000 10 11 13
 64.000000 0.000000 16.150000 10 11 13
 65.000000 0.000000 16.320000 12 12 16
 66.000000 0.000000 16.320000 13 12 18
