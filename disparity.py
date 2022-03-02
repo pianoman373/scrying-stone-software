@@ -36,8 +36,19 @@ def create_output(vertices, colors, filename):
         f.write(ply_header % dict(vert_num=len(vertices)))
         np.savetxt(f, vertices, '%f %f %f %d %d %d')
 
+first = True
 
-if __name__ == '__main__':
+block_size = 5
+def block_size_update(val):
+    global block_size
+    block_size = val
+
+focal_length = 1.0
+def focal_length_update(val):
+    global focal_length
+    focal_length = val
+
+def reconstruct(img_1, img_2):
     # =========================================================
     # Stereo 3D reconstruction
     # =========================================================
@@ -48,9 +59,7 @@ if __name__ == '__main__':
     # Specify image paths
     img_path1 = './reconstruct_this/left.jpg'
     img_path2 = './reconstruct_this/right.jpg'
-    # Load pictures
-    img_1 = cv2.imread(img_path1)
-    img_2 = cv2.imread(img_path2)
+
     # Get height and width. Note: It assumes that both pictures are the same size. They HAVE to be same size
     h, w = img_2.shape[:2]
 
@@ -60,8 +69,12 @@ if __name__ == '__main__':
     img_1_undistorted = cv2.undistort(img_1, K, dist, None, new_camera_matrix)
     img_2_undistorted = cv2.undistort(img_2, K, dist, None, new_camera_matrix)
     # Downsample each image 3 times (because they're too big)
-    img_1_downsampled = downsample_image(img_1, 3)
-    img_2_downsampled = downsample_image(img_2, 3)
+    img_1_downsampled = img_1#downsample_image(img_1, 1)
+    img_2_downsampled = img_2#downsample_image(img_2, 1)
+
+    global first
+    global block_size
+    global focal_length
 
     # Set disparity parameters
     # Note: disparity range is tuned according to specific parameters obtained through trial and error.
@@ -72,7 +85,7 @@ if __name__ == '__main__':
     # Create Block matching object.
     stereo = cv2.StereoSGBM_create(minDisparity=min_disp,
                                    numDisparities=num_disp,
-                                   blockSize=5,
+                                   blockSize=block_size,
                                    uniquenessRatio=5,
                                    speckleWindowSize=5,
                                    speckleRange=5,
@@ -83,12 +96,19 @@ if __name__ == '__main__':
     print("\nComputing the disparity  map...")
     disparity_map = stereo.compute(img_1_downsampled, img_2_downsampled)
 
+    cv2.imshow('disparity', disparity_map)
+
+    if first:
+        cv2.createTrackbar('block size', 'disparity', 0, 10, block_size_update)
+        cv2.createTrackbar('focal length', 'disparity', 0, 3, focal_length_update)
+        first = False
+
     # Generate  point cloud.
     print("\nGenerating the 3D map...")
     # Get new downsampled width and height
     h, w = img_2_downsampled.shape[:2]
     # Load focal length.
-    focal_length = 3.4
+
     # Perspective transformation matrix
     # This transformation matrix is from the openCV documentation, didn't seem to work for me.
     Q = np.float32([[1, 0, 0, -w / 2.0],
@@ -118,4 +138,28 @@ if __name__ == '__main__':
 
     cloud = o3d.io.read_point_cloud("reconstructed.ply")  # Read the point cloud
     o3d.visualization.draw_geometries([cloud])  # Visualize the point cloud
+
+if __name__ == '__main__':
+    cam1 = cv2.VideoCapture(2)
+    cam2 = cv2.VideoCapture(3)
+
+    vis = o3d.visualization.Visualizer()
+    vis.create_window()
+
+    while True:
+        check1, frame1 = cam1.read()
+        check2, frame2 = cam2.read()
+
+        cv2.imshow('left', frame1)
+        cv2.imshow('right', frame2)
+
+        reconstruct(frame1, frame2)
+
+        key = cv2.waitKey(1)
+        if key == ord('a'):
+            break
+
+    cam1.release()
+    cam2.release()
+    cv2.destroyAllWindows()
 
