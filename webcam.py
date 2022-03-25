@@ -60,8 +60,8 @@ def crop_bottom_half(img):
     return cropped_img
 
 if __name__ == '__main__':
-    #cam = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
-    cam = cv2.VideoCapture(0)
+    cam = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
+    #cam = cv2.VideoCapture(0)
     index = 0
     lastSavedTime = time.time()
 
