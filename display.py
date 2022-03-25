@@ -1,11 +1,11 @@
 import cv2
 
 def gstreamer_pipeline(
-    capture_width=1920,
-    capture_height=1080,
-    display_width=960,
-    display_height=540,
-    framerate=30,
+    capture_width=3264,
+    capture_height=2464,
+    display_width=1432,
+    display_height=1080,
+    framerate=10,
     flip_method=0,
 ):
     return (
