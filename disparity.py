@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import open3d as o3d
-
+import threading
 
 # Function that Downsamples image x number (reduce_factor) of times.
 def downsample_image(image, reduce_factor):
@@ -36,19 +36,32 @@ def create_output(vertices, colors, filename):
         f.write(ply_header % dict(vert_num=len(vertices)))
         np.savetxt(f, vertices, '%f %f %f %d %d %d')
 
-first = True
+def nothing(x):
+    pass
 
-block_size = 5
-def block_size_update(val):
-    global block_size
-    block_size = val
+def reconstruct_init():
+    cv2.namedWindow('disp', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('disp', 1200, 1200)
 
-focal_length = 1.0
-def focal_length_update(val):
-    global focal_length
-    focal_length = val
+    cv2.namedWindow('disparity', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('disparity', 1200, 1200)
+
+    cv2.createTrackbar('minDisparity', 'disp', 0, 17, nothing)
+    cv2.createTrackbar('maxDisparity', 'disp', 5, 100, nothing)
+    cv2.createTrackbar('blockSize', 'disp', 2, 11, nothing)
+    cv2.createTrackbar('uniquenessRatio', 'disp', 5, 20, nothing)
+    cv2.createTrackbar('speckleWindowSize', 'disp', 5, 20, nothing)
+    cv2.createTrackbar('speckleRange', 'disp', 5, 20, nothing)
+    cv2.createTrackbar('disp12MaxDiff', 'disp', 1, 20, nothing)
+    cv2.createTrackbar('win_size', 'disp', 5, 20, nothing)
+
+computing = False
+pcd = o3d.geometry.PointCloud()
 
 def reconstruct(img_1, img_2):
+    global computing
+
+    computing = True
     # =========================================================
     # Stereo 3D reconstruction
     # =========================================================
@@ -56,58 +69,58 @@ def reconstruct(img_1, img_2):
     ret = np.load('./camera_params/ret.npy')
     K = np.load('./camera_params/K.npy')
     dist = np.load('./camera_params/dist.npy')
-    # Specify image paths
-    img_path1 = './reconstruct_this/left.jpg'
-    img_path2 = './reconstruct_this/right.jpg'
 
     # Get height and width. Note: It assumes that both pictures are the same size. They HAVE to be same size
     h, w = img_2.shape[:2]
 
     # Get optimal camera matrix for better undistortion
     new_camera_matrix, roi = cv2.getOptimalNewCameraMatrix(K, dist, (w, h), 1, (w, h))
+    #convert images to grayscale
+    img1_gray = cv2.cvtColor(img_1, cv2.COLOR_BGR2GRAY)
+    img2_gray = cv2.cvtColor(img_2, cv2.COLOR_BGR2GRAY)
+
     # Undistort images
     img_1_undistorted = cv2.undistort(img_1, K, dist, None, new_camera_matrix)
     img_2_undistorted = cv2.undistort(img_2, K, dist, None, new_camera_matrix)
     # Downsample each image 3 times (because they're too big)
-    img_1_downsampled = img_1#downsample_image(img_1, 1)
-    img_2_downsampled = img_2#downsample_image(img_2, 1)
+    img_1_downsampled = img1_gray#downsample_image(img1_gray, 1)
+    img_2_downsampled = img2_gray#downsample_image(img2_gray, 1)
 
-    global first
-    global block_size
-    global focal_length
+    minDisparity = cv2.getTrackbarPos('minDisparity', 'disp')
+    maxDisparity = cv2.getTrackbarPos('maxDisparity', 'disp')*16
+    blockSize = cv2.getTrackbarPos('blockSize', 'disp')
+    uniquenessRatio = cv2.getTrackbarPos('uniquenessRatio', 'disp')
+    speckleWindowSize = cv2.getTrackbarPos('speckleWindowSize', 'disp')
+    speckleRange = cv2.getTrackbarPos('speckleRange', 'disp')
+    disp12MaxDiff = cv2.getTrackbarPos('disp12MaxDiff', 'disp')
+    win_size = cv2.getTrackbarPos('win_size', 'disp')
 
-    # Set disparity parameters
     # Note: disparity range is tuned according to specific parameters obtained through trial and error.
-    win_size = 5
-    min_disp = -1
-    max_disp = 63  # min_disp * 9
+    min_disp = minDisparity
+    max_disp = maxDisparity  # min_disp * 9
     num_disp = max_disp - min_disp  # Needs to be divisible by 16
     # Create Block matching object.
     stereo = cv2.StereoSGBM_create(minDisparity=min_disp,
                                    numDisparities=num_disp,
-                                   blockSize=block_size,
-                                   uniquenessRatio=5,
-                                   speckleWindowSize=5,
-                                   speckleRange=5,
-                                   disp12MaxDiff=1,
+                                   blockSize=blockSize,
+                                   uniquenessRatio=uniquenessRatio,
+                                   speckleWindowSize=speckleWindowSize,
+                                   speckleRange=speckleRange,
+                                   disp12MaxDiff=disp12MaxDiff,
                                    P1=8 * 3 * win_size ** 2,  # 8*3*win_size**2,
                                    P2=32 * 3 * win_size ** 2)  # 32*3*win_size**2)
     # Compute disparity map
     print("\nComputing the disparity  map...")
     disparity_map = stereo.compute(img_1_downsampled, img_2_downsampled)
 
-    cv2.imshow('disparity', disparity_map)
-
-    if first:
-        cv2.createTrackbar('block size', 'disparity', 0, 10, block_size_update)
-        cv2.createTrackbar('focal length', 'disparity', 0, 3, focal_length_update)
-        first = False
+    # cv2.imshow('disparity', disparity_map)
 
     # Generate  point cloud.
     print("\nGenerating the 3D map...")
     # Get new downsampled width and height
     h, w = img_2_downsampled.shape[:2]
     # Load focal length.
+    focal_length = 3.6
 
     # Perspective transformation matrix
     # This transformation matrix is from the openCV documentation, didn't seem to work for me.
@@ -124,20 +137,23 @@ def reconstruct(img_1, img_2):
     # Reproject points into 3D
     points_3D = cv2.reprojectImageTo3D(disparity_map, Q2)
     # Get color points
-    colors = cv2.cvtColor(img_1_downsampled, cv2.COLOR_BGR2RGB)
+    colors = cv2.cvtColor(img_1, cv2.COLOR_BGR2RGB)
     # Get rid of points with value 0 (i.e no depth)
     mask_map = disparity_map > disparity_map.min()
     # Mask colors and points.
     output_points = points_3D[mask_map]
     output_colors = colors[mask_map]
+
+    global pcd
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(output_points)
     # Define name for output file
     output_file = 'reconstructed.ply'
     # Generate point cloud
-    print("\n Creating the output file... \n")
-    create_output(output_points, output_colors, output_file)
+    #print("\n Creating the output file... \n")
+    #create_output(output_points, output_colors, output_file)
 
-    cloud = o3d.io.read_point_cloud("reconstructed.ply")  # Read the point cloud
-    o3d.visualization.draw_geometries([cloud])  # Visualize the point cloud
+    computing = False
 
 if __name__ == '__main__':
     cam1 = cv2.VideoCapture(2)
@@ -146,6 +162,15 @@ if __name__ == '__main__':
     vis = o3d.visualization.Visualizer()
     vis.create_window()
 
+    reconstruct_init()
+
+    check1, frame1 = cam1.read()
+    check2, frame2 = cam2.read()
+
+    t1 = threading.Thread(target=reconstruct, args=(frame1, frame2,))
+    t1.start()
+
+    print("now looping")
     while True:
         check1, frame1 = cam1.read()
         check2, frame2 = cam2.read()
@@ -153,7 +178,17 @@ if __name__ == '__main__':
         cv2.imshow('left', frame1)
         cv2.imshow('right', frame2)
 
-        reconstruct(frame1, frame2)
+
+        if not computing:
+            #cloud = o3d.io.read_point_cloud("reconstructed.ply")  # Read the point cloud
+            vis.clear_geometries()
+            vis.add_geometry(pcd)
+
+            t1 = threading.Thread(target=reconstruct, args=(frame1, frame2,))
+            t1.start()
+
+        vis.poll_events()
+        vis.update_renderer()
 
         key = cv2.waitKey(1)
         if key == ord('a'):

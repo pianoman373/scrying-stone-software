@@ -67,9 +67,11 @@ if __name__ == '__main__':
         PIL.ExifTags.TAGS[k]: v
         for k, v in exif_img._getexif().items()
         if k in PIL.ExifTags.TAGS}
-    focal_length_exif = 45
-    print(focal_length_exif)
-    np.save("./camera_params/FocalLength", focal_length_exif)
+
+    # print(exif_data)
+    # focal_length_exif = exif_data['FocalLength']
+    # print(focal_length_exif)
+    # np.save("./camera_params/FocalLength", focal_length_exif)
 
 
     image = cv2.imread(calibration_paths[0])
