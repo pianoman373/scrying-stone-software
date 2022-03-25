@@ -55,16 +55,23 @@ def find_corners(image):
 def back(*args):
     pass
 
+def crop_bottom_half(img):
+    cropped_img = img[0:img.shape[0], 0:int(img.shape[1]/2)]
+    return cropped_img
+
 if __name__ == '__main__':
-    cam = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
+    #cam = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
+    cam = cv2.VideoCapture(0)
     index = 0
     lastSavedTime = time.time()
 
     while True:
         check, frame = cam.read()
 
+        size = frame.shape
+
         # Load image
-        image = frame
+        image = crop_bottom_half(frame)
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         # find chessboard corners
 
@@ -81,8 +88,6 @@ if __name__ == '__main__':
                 t1.start()
 
 
-
-
         cv2.drawChessboardCorners(image, chessboard_size, corners_list, True)
         cv2.putText(image, "wrote " + str(index) + "images",
                     (50, 50),
@@ -94,8 +99,8 @@ if __name__ == '__main__':
 
         cv2.imshow('video', image)
 
-        key = cv2.waitKey(1)
-        if key == ord('a'):
+        key = cv2.waitKey(20)
+        if key == 27:  # exit on esc
             break
 
     cam.release()
