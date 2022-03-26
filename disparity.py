@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-import open3d as o3d
+#import open3d as o3d
 import threading
 
 # Function that Downsamples image x number (reduce_factor) of times.
@@ -56,7 +56,7 @@ def reconstruct_init():
     cv2.createTrackbar('win_size', 'disp', 5, 20, nothing)
 
 computing = False
-pcd = o3d.geometry.PointCloud()
+#pcd = o3d.geometry.PointCloud()
 
 def reconstruct(img_1, img_2):
     global computing
@@ -159,8 +159,8 @@ if __name__ == '__main__':
     cam1 = cv2.VideoCapture(2)
     cam2 = cv2.VideoCapture(3)
 
-    vis = o3d.visualization.Visualizer()
-    vis.create_window()
+    #vis = o3d.visualization.Visualizer()
+    #vis.create_window()
 
     reconstruct_init()
 
@@ -181,14 +181,14 @@ if __name__ == '__main__':
 
         if not computing:
             #cloud = o3d.io.read_point_cloud("reconstructed.ply")  # Read the point cloud
-            vis.clear_geometries()
-            vis.add_geometry(pcd)
+            #vis.clear_geometries()
+            #vis.add_geometry(pcd)
 
             t1 = threading.Thread(target=reconstruct, args=(frame1, frame2,))
             t1.start()
 
-        vis.poll_events()
-        vis.update_renderer()
+        #vis.poll_events()
+        #vis.update_renderer()
 
         key = cv2.waitKey(1)
         if key == ord('a'):
