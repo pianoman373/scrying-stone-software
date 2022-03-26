@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
 import glob
-from PIL import Image
-from PIL import ExifTags
 from tqdm import tqdm
 
 #============================================
