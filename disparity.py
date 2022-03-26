@@ -170,9 +170,9 @@ def reconstruct(img_1, img_2):
     output_points = points_3D[mask_map]
     output_colors = colors[mask_map]
 
-    global pcd
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(output_points)
+    #global pcd
+    #pcd = o3d.geometry.PointCloud()
+    #pcd.points = o3d.utility.Vector3dVector(output_points)
     # Define name for output file
     output_file = 'reconstructed.ply'
     # Generate point cloud
