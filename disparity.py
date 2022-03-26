@@ -3,6 +3,32 @@ import numpy as np
 #import open3d as o3d
 import threading
 
+def gstreamer_pipeline(
+    capture_width=3264,
+    capture_height=2464,
+    display_width=1432,
+    display_height=1080,
+    framerate=10,
+    flip_method=0,
+):
+    return (
+        "nvarguscamerasrc ! "
+        "video/x-raw(memory:NVMM), "
+        "width=(int)%d, height=(int)%d, framerate=(fraction)%d/1 ! "
+        "nvvidconv flip-method=%d ! "
+        "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
+        "videoconvert ! "
+        "video/x-raw, format=(string)BGR ! appsink drop=True"
+        % (
+            capture_width,
+            capture_height,
+            framerate,
+            flip_method,
+            display_width,
+            display_height,
+        )
+    )
+
 # Function that Downsamples image x number (reduce_factor) of times.
 def downsample_image(image, reduce_factor):
     for i in range(0, reduce_factor):
@@ -155,25 +181,36 @@ def reconstruct(img_1, img_2):
 
     computing = False
 
+
+def crop_left(img):
+    cropped_img = img[0:img.shape[0], 0:int(img.shape[1]/2)]
+    return cropped_img
+
+def crop_right(img):
+    cropped_img = img[0:img.shape[0], int(img.shape[1]/2):int(img.shape[1])]
+    return cropped_img
+
 if __name__ == '__main__':
-    cam1 = cv2.VideoCapture(2)
-    cam2 = cv2.VideoCapture(3)
+    cam = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
+    check, frame = cam.read()
 
     #vis = o3d.visualization.Visualizer()
     #vis.create_window()
 
     reconstruct_init()
 
-    check1, frame1 = cam1.read()
-    check2, frame2 = cam2.read()
+    frame1 = crop_left(frame)
+    frame2 = crop_right(frame)
 
     t1 = threading.Thread(target=reconstruct, args=(frame1, frame2,))
     t1.start()
 
     print("now looping")
     while True:
-        check1, frame1 = cam1.read()
-        check2, frame2 = cam2.read()
+        check, frame = cam.read()
+
+        frame1 = crop_left(frame)
+        frame2 = crop_right(frame)
 
         cv2.imshow('left', frame1)
         cv2.imshow('right', frame2)
