@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import glob
-import PIL
 from PIL import Image
 from PIL import ExifTags
 from tqdm import tqdm
@@ -60,13 +59,6 @@ if __name__ == '__main__':
     np.save("./camera_params/dist", dist)
     np.save("./camera_params/rvecs", rvecs)
     np.save("./camera_params/tvecs", tvecs)
-
-    # Get exif data in order to get focal length.
-    exif_img = PIL.Image.open(calibration_paths[0])
-    exif_data = {
-        PIL.ExifTags.TAGS[k]: v
-        for k, v in exif_img._getexif().items()
-        if k in PIL.ExifTags.TAGS}
 
     # print(exif_data)
     # focal_length_exif = exif_data['FocalLength']
