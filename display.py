@@ -30,8 +30,8 @@ def gstreamer_pipeline(
 
 
 if __name__ == '__main__':
-    #cam = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
-    cam = cv2.VideoCapture(0)
+    cam = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
+    #cam = cv2.VideoCapture(0)
     cv2.namedWindow("video")
 
     if cam.isOpened():

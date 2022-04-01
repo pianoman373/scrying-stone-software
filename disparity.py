@@ -227,8 +227,8 @@ if __name__ == '__main__':
         #vis.poll_events()
         #vis.update_renderer()
 
-        key = cv2.waitKey(1)
-        if key == ord('a'):
+        key = cv2.waitKey(20)
+        if key == 27: #exit on esc
             break
 
     cam1.release()
