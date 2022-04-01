@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
         # Load image
         image = crop_bottom_half(frame)
-        image = crop_padding(image, 100, 100, 100, 100)
+        image = crop_padding(image, 150, 150, 150, 150)
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         if cv2.waitKey(1) & 0xFF == ord(' '):
