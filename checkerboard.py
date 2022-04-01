@@ -25,10 +25,15 @@ def find_corners(image):
     else:
         corners_list = np.zeros(0)
 
+    print("worker thread exited")
     computing = False
 
 def back(*args):
     pass
+
+# crop padding from opencv image
+def crop_padding(image, left, right, top, bottom):
+    return image[top:image.shape[0]-bottom, left:image.shape[1]-right]
 
 def crop_bottom_half(img):
     cropped_img = img[0:img.shape[0], 0:int(img.shape[1]/2)]
@@ -41,9 +46,11 @@ if __name__ == '__main__':
 
     while True:
         check, frame = cam.read()
+        cv2.imshow('frame', frame)
 
         # Load image
         image = crop_bottom_half(frame)
+        image = crop_padding(image, 300, 300, 300, 300)
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         # find chessboard corners
