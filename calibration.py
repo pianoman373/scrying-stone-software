@@ -27,7 +27,7 @@ if __name__ == '__main__':
         print("Image loaded, Analizying...")
         # find chessboard corners
         ret, corners = cv2.findChessboardCorners(gray_image, chessboard_size,
-                                                 cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_NORMALIZE_IMAGE)
+                                                 cv2.CALIB_CB_ADAPTIVE_THRESH+ cv2.CALIB_CB_NORMALIZE_IMAGE)
         if ret == True:
             print("Chessboard detected!")
             cv2.drawChessboardCorners(image, chessboard_size, corners, True)
