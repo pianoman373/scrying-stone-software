@@ -33,7 +33,6 @@ if __name__ == '__main__':
             cv2.drawChessboardCorners(image, chessboard_size, corners, True)
             cv2.namedWindow("detected corners", cv2.WINDOW_NORMAL)
             cv2.imshow("detected corners", image)
-            cv2.waitKey()
             # define criteria for subpixel accuracy
             criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
             # refine corner location (to subpixel accuracy) based on criteria.
