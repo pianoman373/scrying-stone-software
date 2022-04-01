@@ -53,6 +53,10 @@ if __name__ == '__main__':
         image = crop_padding(image, 300, 300, 300, 300)
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+        if cv2.waitKey(1) & 0xFF == ord(' '):
+            cv2.imwrite("calibration_images/image" + str(index) + ".png", image)
+            index = index + 1
+
         # find chessboard corners
         if not computing:
             t1 = threading.Thread(target=find_corners, args=(gray_image,))
@@ -68,10 +72,6 @@ if __name__ == '__main__':
                     cv2.LINE_AA)
 
         cv2.imshow('video', image)
-
-        if cv2.waitKey(1) & 0xFF == ord(' '):
-            cv2.imwrite("calibration_images/image" + str(index) + ".png", image)
-            index = index + 1
 
         key = cv2.waitKey(20)
         if key == 27:  # exit on esc
