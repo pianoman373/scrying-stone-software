@@ -2,32 +2,7 @@ import cv2
 import numpy as np
 import threading
 import time
-
-def gstreamer_pipeline(
-    capture_width=3264,
-    capture_height=2464,
-    display_width=1432,
-    display_height=1080,
-    framerate=10,
-    flip_method=0,
-):
-    return (
-        "nvarguscamerasrc ! "
-        "video/x-raw(memory:NVMM), "
-        "width=(int)%d, height=(int)%d, framerate=(fraction)%d/1 ! "
-        "nvvidconv flip-method=%d ! "
-        "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
-        "videoconvert ! "
-        "video/x-raw, format=(string)BGR ! appsink drop=True"
-        % (
-            capture_width,
-            capture_height,
-            framerate,
-            flip_method,
-            display_width,
-            display_height,
-        )
-    )
+import camera
 
 chessboard_size = (6, 9)
 corners_list = np.zeros(0)
@@ -60,33 +35,21 @@ def crop_bottom_half(img):
     return cropped_img
 
 if __name__ == '__main__':
-    cam = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
-    #cam = cv2.VideoCapture(0)
+    cam = camera.open_camera()
     index = 0
     lastSavedTime = time.time()
 
     while True:
         check, frame = cam.read()
 
-        size = frame.shape
-
         # Load image
         image = crop_bottom_half(frame)
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
         # find chessboard corners
-
-
         if not computing:
-            currentTime = time.time()
-
-            if currentTime - lastSavedTime > 3:
-                cv2.imwrite("calibration_images/image" + str(index) + ".png", image)
-                index = index + 1
-                lastSavedTime = currentTime
-
-                t1 = threading.Thread(target=find_corners, args=(gray_image,))
-                t1.start()
-
+            t1 = threading.Thread(target=find_corners, args=(gray_image,))
+            t1.start()
 
         cv2.drawChessboardCorners(image, chessboard_size, corners_list, True)
         cv2.putText(image, "wrote " + str(index) + "images",
@@ -98,6 +61,10 @@ if __name__ == '__main__':
                     cv2.LINE_AA)
 
         cv2.imshow('video', image)
+
+        if cv2.waitKey(1) & 0xFF == ord(' '):
+            cv2.imwrite("calibration_images/image" + str(index) + ".png", image)
+            index = index + 1
 
         key = cv2.waitKey(20)
         if key == 27:  # exit on esc
