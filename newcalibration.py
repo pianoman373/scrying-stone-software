@@ -34,6 +34,12 @@ img = cv.imread('./calibration_images/image0.png')
 gray_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray_image.shape[::-1], None, None)
 
+np.save("./camera_params/ret", ret)
+np.save("./camera_params/K", mtx)
+np.save("./camera_params/dist", dist)
+np.save("./camera_params/rvecs", rvecs)
+np.save("./camera_params/tvecs", tvecs)
+
 
 h,  w = img.shape[:2]
 newcameramtx, roi = cv.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
