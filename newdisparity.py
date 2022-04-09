@@ -1,6 +1,7 @@
 import cv2.fisheye
 import numpy as np
 import cv2
+import camera
 
 f = 129
 cx = 388
@@ -125,11 +126,11 @@ def undistort(img):
     return undistorted_img
 
 if __name__ == "__main__":
+    cam0 = camera.CameraFeed(0)
+    cam1 = camera.CameraFeed(1)
     frame = cv2.imread("parallel.png")
 
     reconstruct_init()
-
-
 
     cv2.namedWindow('frame1', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('frame1', 400, 400)
@@ -150,8 +151,8 @@ if __name__ == "__main__":
     cv2.createTrackbar('k4', 'options', 0, 100, nothing)
 
     while True:
-        frame1 = crop_left(frame)
-        frame2 = crop_right(frame)
+        frame1 = cam0.read()
+        frame2 = cam1.read()
 
         frame1 = crop_padding(frame1, 150, 150, 150, 150)
         frame2 = crop_padding(frame2, 150, 150, 150, 150)

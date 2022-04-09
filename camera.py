@@ -28,6 +28,18 @@ def gstreamer_pipeline(
         )
     )
 
+# crop padding from opencv image
+def crop_padding(image, left, right, top, bottom):
+    return image[top:image.shape[0]-bottom, left:image.shape[1]-right]
+
+def crop_left(img):
+    cropped_img = img[0:img.shape[0], 0:int(img.shape[1]/2)]
+    return cropped_img
+
+def crop_right(img):
+    cropped_img = img[0:img.shape[0], int(img.shape[1]/2):int(img.shape[1])]
+    return cropped_img
+
 class CameraFeed:
     def __init__(self, index):
         self.index = index
@@ -50,6 +62,15 @@ class CameraFeed:
         ret, frame = self.cap.read()
 
         if ret:
+            if self.gstreamer:
+                if self.index == 0:
+                    frame = crop_left(frame)
+
+                if self.index == 1:
+                    frame = crop_right(frame)
+
+                frame = crop_padding(frame, 150, 150, 150, 150)
+
             return frame
         else:
             print("Error reading video capture")
