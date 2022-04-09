@@ -154,9 +154,6 @@ if __name__ == "__main__":
         frame1 = cam0.read()
         frame2 = cam1.read()
 
-        frame1 = crop_padding(frame1, 150, 150, 150, 150)
-        frame2 = crop_padding(frame2, 150, 150, 150, 150)
-
         # frame1 = cv2.imread("im0.png")
         # frame1 = downsample_image(frame1, 2)
         # frame2 = cv2.imread("im1.png")
