@@ -162,8 +162,8 @@ if __name__ == "__main__":
         frame1 = undistort(frame1)
         frame2 = undistort(frame2)
 
-        frame1 = downsample_image(frame1, 2)
-        frame2 = downsample_image(frame2, 2)
+        frame1 = downsample_image(frame1, 1)
+        frame2 = downsample_image(frame2, 1)
 
         cv2.imshow("frame1", frame1)
         cv2.imshow("frame2", frame2)
