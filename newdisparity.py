@@ -154,9 +154,6 @@ if __name__ == "__main__":
         frame1 = cam0.read()
         frame2 = cam1.read()
 
-        frame1 = downsample_image(frame1, 2)
-        frame2 = downsample_image(frame2, 2)
-
         # frame1 = cv2.imread("im0.png")
         # frame1 = downsample_image(frame1, 2)
         # frame2 = cv2.imread("im1.png")
@@ -164,6 +161,9 @@ if __name__ == "__main__":
 
         frame1 = undistort(frame1)
         frame2 = undistort(frame2)
+
+        frame1 = downsample_image(frame1, 2)
+        frame2 = downsample_image(frame2, 2)
 
         cv2.imshow("frame1", frame1)
         cv2.imshow("frame2", frame2)
