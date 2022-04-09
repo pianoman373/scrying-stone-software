@@ -40,8 +40,11 @@ def crop_right(img):
     cropped_img = img[0:img.shape[0], int(img.shape[1]/2):int(img.shape[1])]
     return cropped_img
 
+gstream_cap = None
+
 class CameraFeed:
     def __init__(self, index):
+        global gstream_cap
         self.index = index
         self.gstreamer = True
 
@@ -51,7 +54,13 @@ class CameraFeed:
                 break
 
         if self.gstreamer:
-            self.cap = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
+            if gstream_cap == None:
+                self.cap = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
+                gstream_cap = self.cap
+            else:
+                self.cap = gstream_cap
+
+
         else:
             self.cap = cv2.VideoCapture(index)
 
