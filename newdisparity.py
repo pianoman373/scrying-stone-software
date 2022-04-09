@@ -169,7 +169,6 @@ if __name__ == "__main__":
         cv2.imshow("frame2", frame2)
 
         disp = reconstruct(frame1, frame2)
-        disp = (disp * 16) - 16
 
         scaledDisparity = disp - np.min(disp)
         scaledDisparity = scaledDisparity * (255/np.max(scaledDisparity))
