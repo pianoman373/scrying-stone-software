@@ -1,2 +1,2 @@
-calibration_images
+calibration_images/*.png
 camera_params

@@ -67,7 +67,7 @@ class CameraFeed:
         if not self.cap.isOpened():
             print("Error opening video stream")
 
-    def read(self):
+    def read(self, padding=True):
         ret, frame = self.cap.read()
 
         if ret:
@@ -78,7 +78,8 @@ class CameraFeed:
                 if self.index == 1:
                     frame = crop_right(frame)
 
-                frame = crop_padding(frame, 150, 150, 150, 150)
+                if padding:
+                    frame = crop_padding(frame, 150, 150, 150, 150)
 
             return frame
         else:

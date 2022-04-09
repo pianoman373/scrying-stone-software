@@ -5,25 +5,32 @@ import time
 import camera
 
 chessboard_size = (6, 9)
-corners_list = np.zeros(0)
+corners_list0 = np.zeros(0)
+corners_list1 = np.zeros(0)
 found_corners = False
 computing = False
 
-def find_corners(image):
-    global corners_list
+def find_corners(image0, image1):
+    global corners_list0
+    global corners_list1
     global computing
     global found_corners
 
     computing = True
-    ret, corners = cv2.findChessboardCorners(image, chessboard_size,
+    ret0, corners0 = cv2.findChessboardCorners(image0, chessboard_size,
                                              cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
 
-    found_corners = ret
+    ret1, corners1 = cv2.findChessboardCorners(image1, chessboard_size,
+                                               cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
 
-    if ret == True:
-        corners_list = corners
+    found_corners = ret0 or ret1
+
+    if found_corners == True:
+        corners_list0 = corners0
+        corners_list1 = corners1
     else:
-        corners_list = np.zeros(0)
+        corners_list0 = np.zeros(0)
+        corners_list1 = np.zeros(0)
 
     print("worker thread exited")
     computing = False
@@ -31,39 +38,32 @@ def find_corners(image):
 def back(*args):
     pass
 
-# crop padding from opencv image
-def crop_padding(image, left, right, top, bottom):
-    return image[top:image.shape[0]-bottom, left:image.shape[1]-right]
-
-def crop_bottom_half(img):
-    cropped_img = img[0:img.shape[0], 0:int(img.shape[1]/2)]
-    return cropped_img
-
 if __name__ == '__main__':
-    cam = camera.open_camera()
+    cam0 = camera.CameraFeed(0)
+    cam1 = camera.CameraFeed(1)
     index = 0
-    lastSavedTime = time.time()
 
     while True:
-        check, frame = cam.read()
-        cv2.imshow('frame', frame)
+        frame0 = cam0.read(False)
+        frame1 = cam1.read(False)
 
-        # Load image
-        image = crop_bottom_half(frame)
-        image = crop_padding(image, 150, 150, 150, 150)
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray_frame0 = cv2.cvtColor(frame0, cv2.COLOR_BGR2GRAY)
+        gray_frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
 
         if cv2.waitKey(1) & 0xFF == ord(' '):
-            cv2.imwrite("calibration_images/image" + str(index) + ".png", image)
+            cv2.imwrite("calibration_images/left/image" + str(index) + ".png", frame0)
+            cv2.imwrite("calibration_images/right/image" + str(index) + ".png", frame1)
             index = index + 1
 
         # find chessboard corners
         if not computing:
-            t1 = threading.Thread(target=find_corners, args=(gray_image,))
+            t1 = threading.Thread(target=find_corners, args=(gray_frame0,gray_frame1,))
             t1.start()
 
-        cv2.drawChessboardCorners(image, chessboard_size, corners_list, True)
-        cv2.putText(image, "wrote " + str(index) + "images",
+        cv2.drawChessboardCorners(frame0, chessboard_size, corners_list0, True)
+        cv2.drawChessboardCorners(frame1, chessboard_size, corners_list1, True)
+
+        cv2.putText(frame0, "wrote " + str(index) + "images",
                     (50, 50),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     1,
@@ -71,11 +71,11 @@ if __name__ == '__main__':
                     2,
                     cv2.LINE_AA)
 
-        cv2.imshow('video', image)
+        cv2.imshow('left', frame0)
+        cv2.imshow('right', frame1)
 
         key = cv2.waitKey(20)
         if key == 27:  # exit on esc
             break
 
-    cam.release()
     cv2.destroyAllWindows()
