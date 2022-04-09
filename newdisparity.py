@@ -139,7 +139,7 @@ if __name__ == "__main__":
     cv2.resizeWindow('frame2', 400, 400)
 
     cv2.namedWindow('options', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('options', 600, 600)
+    cv2.resizeWindow('options', 600, 400)
 
     cv2.createTrackbar('f', 'options', 341, 2000, nothing)
     cv2.createTrackbar('cx', 'options', 388, 1000, nothing)
@@ -153,6 +153,9 @@ if __name__ == "__main__":
     while True:
         frame1 = cam0.read()
         frame2 = cam1.read()
+
+        frame1 = downsample_image(frame1, 2)
+        frame2 = downsample_image(frame2, 2)
 
         # frame1 = cv2.imread("im0.png")
         # frame1 = downsample_image(frame1, 2)
