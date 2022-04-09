@@ -2,24 +2,20 @@ import cv2
 import camera
 
 if __name__ == '__main__':
-    cam = camera.open_camera()
+    cam = camera.CameraFeed(0)
+    cam2 = camera.CameraFeed(1)
     cv2.namedWindow("video")
 
-    if cam.isOpened():
+    while True:
+        frame = cam.read()
+        frame2 = cam2.read()
 
-        while True:
-            check, frame = cam.read()
+        cv2.imshow('video', frame)
+        cv2.imshow('video2', frame2)
 
-            if check:
-                cv2.imshow('video', frame)
-            else:
-                print("Error: failed to retrieve frame")
+        key = cv2.waitKey(20)
+        if key == 27:  # exit on esc
+            break
 
-            key = cv2.waitKey(20)
-            if key == 27: #exit on esc
-                break
-
-        cam.release()
-        cv2.destroyAllWindows()
-    else:
-        print("Error: failed to open video capture")
+    cam.release()
+    cv2.destroyAllWindows()
