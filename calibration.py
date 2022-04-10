@@ -2,9 +2,7 @@ import cv2.fisheye
 import numpy as np
 import cv2 as cv
 import glob
-
-# import module
-import traceback
+import undistort
 
 CHECKERBOARD = (6,9)
 
@@ -146,12 +144,8 @@ if __name__ == "__main__":
     # )
 
     # undistort
-    map1, map2 = cv.fisheye.initUndistortRectifyMap(K0, D0, np.eye(3), K0, (w,h), cv.CV_16SC2)
-    undistorted_img0 = cv.remap(img0, map1, map2, interpolation=cv.INTER_LINEAR, borderMode=cv.BORDER_CONSTANT)
-
-    # undistort
-    map1, map2 = cv.fisheye.initUndistortRectifyMap(K1, D1, np.eye(3), K1, (w, h), cv.CV_16SC2)
-    undistorted_img1 = cv.remap(img1, map1, map2, interpolation=cv.INTER_LINEAR, borderMode=cv.BORDER_CONSTANT)
+    undistorted_img0 = undistort.undistort_fisheye(img0, K0, D0)
+    undistorted_img1 = undistort.undistort_fisheye(img1, K1, D1)
 
     np.save("camera_params/K0.npy", K0)
     np.save("camera_params/K1.npy", K1)
