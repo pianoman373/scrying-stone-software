@@ -108,8 +108,8 @@ if __name__ == '__main__':
         # img0 = cv2.imread('calibration_images/left/image0.png')
         # img1 = cv2.imread('calibration_images/right/image1.png')
 
-        # img0 = undistort.undistort_fisheye(img0, K0, D0)
-        # img1 = undistort.undistort_fisheye(img1, K1, D1)
+        img0 = undistort.undistort_fisheye(img0, K0, D0)
+        img1 = undistort.undistort_fisheye(img1, K1, D1)
         #
         # img0 = cv2.imread('im0.png')
         # img1 = cv2.imread('im1.png')
@@ -117,8 +117,8 @@ if __name__ == '__main__':
         cv2.imshow("cam0", img0)
         cv2.imshow("cam1", img1)
 
-        #img0 = utils.downsample_image(img0, 1)
-        #img1 = utils.downsample_image(img1, 1)
+        img0 = utils.downsample_image(img0, 1)
+        img1 = utils.downsample_image(img1, 1)
 
         disp = disparity.reconstruct(img0, img1)
 
