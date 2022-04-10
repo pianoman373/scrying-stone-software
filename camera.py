@@ -3,10 +3,10 @@ import sys, getopt
 
 
 def gstreamer_pipeline(
-    capture_width=3264*1.5,
-    capture_height=2464,
-    display_width=1432*1.5,
-    display_height=1080,
+    capture_width=3280*0.5,
+    capture_height=2464*0.25,
+    display_width=3280*0.5,
+    display_height=2464*0.25,
     framerate=10,
     flip_method=0,
 ):
