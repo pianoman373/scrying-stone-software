@@ -3,15 +3,6 @@ import numpy as np
 import cv2
 import camera
 
-f = 129
-cx = 388
-cy = 388
-k1 = 0.19
-k2 = 0.19
-k3 = 0
-k4 = 0
-
-
 def crop_left(img):
     cropped_img = img[0:img.shape[0], 0:int(img.shape[1]/2)]
     return cropped_img
@@ -99,27 +90,12 @@ def reconstruct(img_1, img_2):
     return disparity_map
 
 
-def undistort(img):
+def undistort(img, K, D):
     h, w = img.shape[:2]
-    # newcameramtx, roi = cv.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
-    f = cv2.getTrackbarPos('f', 'options')
-    cx = cv2.getTrackbarPos('cx', 'options')
-    cy = cv2.getTrackbarPos('cy', 'options')
-
-    k1 = cv2.getTrackbarPos('k1', 'options') * 0.01
-    k2 = cv2.getTrackbarPos('k2', 'options') * 0.01
-    k3 = cv2.getTrackbarPos('k3', 'options') * 0.01
-    k4 = cv2.getTrackbarPos('k4', 'options') * 0.01
-
-    K = np.array([[f, 0.0, cx],
-                  [0.0, f, cy],
-                  [0.0, 0.0, 1.0]])
-
-    D = np.array([k1, k2, k3, k4], dtype=np.float32)
 
     # undistort
-    new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(K, D, (w, h), np.eye(3), balance=0.0)
-    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), new_K, (w, h), cv2.CV_16SC2)
+    #new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(K, D, (w, h), np.eye(3), balance=0.0)
+    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, (w, h), cv2.CV_16SC2)
     # undistorted_img = cv.fisheye.undistortImage(img, K, D)
     undistorted_img = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
 
@@ -138,29 +114,21 @@ if __name__ == "__main__":
     cv2.namedWindow('frame2', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('frame2', 400, 400)
 
-    cv2.namedWindow('options', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('options', 600, 400)
-
-    cv2.createTrackbar('f', 'options', 341, 2000, nothing)
-    cv2.createTrackbar('cx', 'options', 388, 1000, nothing)
-    cv2.createTrackbar('cy', 'options', 388, 1000, nothing)
-
-    cv2.createTrackbar('k1', 'options', 0, 100, nothing)
-    cv2.createTrackbar('k2', 'options', 0, 100, nothing)
-    cv2.createTrackbar('k3', 'options', 0, 100, nothing)
-    cv2.createTrackbar('k4', 'options', 0, 100, nothing)
-
     while True:
         frame1 = cam0.read()
         frame2 = cam1.read()
 
-        # frame1 = cv2.imread("im0.png")
-        # frame1 = downsample_image(frame1, 2)
-        # frame2 = cv2.imread("im1.png")
-        # frame2 = downsample_image(frame2, 2)
+        frame1 = cv2.imread("calibration_images/left/image0.png")
+        frame2 = cv2.imread("calibration_images/right/image0.png")
 
-        frame1 = undistort(frame1)
-        frame2 = undistort(frame2)
+        K0 = np.load("camera_params/K0.npy")
+        K1 = np.load("camera_params/K1.npy")
+        D0 = np.load("camera_params/D0.npy")
+        D1 = np.load("camera_params/D1.npy")
+
+
+        frame1 = undistort(frame1, K0, D0)
+        frame2 = undistort(frame2, K1, D1)
 
         frame1 = downsample_image(frame1, 1)
         frame2 = downsample_image(frame2, 1)

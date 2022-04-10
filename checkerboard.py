@@ -51,8 +51,8 @@ if __name__ == '__main__':
         gray_frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
 
         if cv2.waitKey(1) & 0xFF == ord(' '):
-            cv2.imwrite("calibration_images/left/image" + str(index) + ".png", frame0)
-            cv2.imwrite("calibration_images/right/image" + str(index) + ".png", frame1)
+            cv2.imwrite("calibration_images/right/image" + str(index) + ".png", frame0)
+            cv2.imwrite("calibration_images/left/image" + str(index) + ".png", frame1)
             index = index + 1
 
         # find chessboard corners
