@@ -115,8 +115,8 @@ if __name__ == "__main__":
     cv2.resizeWindow('frame2', 400, 400)
 
     while True:
-        frame1 = cam0.read()
-        frame2 = cam1.read()
+        frame1 = cam0.read(False)
+        frame2 = cam1.read(False)
         #
         # frame1 = cv2.imread("calibration_images/left/image0.png")
         # frame2 = cv2.imread("calibration_images/right/image0.png")
