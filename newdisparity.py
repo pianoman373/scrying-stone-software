@@ -117,9 +117,9 @@ if __name__ == "__main__":
     while True:
         frame1 = cam0.read()
         frame2 = cam1.read()
-
-        frame1 = cv2.imread("calibration_images/left/image0.png")
-        frame2 = cv2.imread("calibration_images/right/image0.png")
+        #
+        # frame1 = cv2.imread("calibration_images/left/image0.png")
+        # frame2 = cv2.imread("calibration_images/right/image0.png")
 
         K0 = np.load("camera_params/K0.npy")
         K1 = np.load("camera_params/K1.npy")
