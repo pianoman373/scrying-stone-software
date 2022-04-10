@@ -7,8 +7,8 @@ if __name__ == '__main__':
     cv2.namedWindow("video")
 
     while True:
-        frame = cam.read()
-        frame2 = cam2.read()
+        frame = cam.read(False)
+        frame2 = cam2.read(False)
 
         cv2.imshow('video', frame)
         cv2.imshow('video2', frame2)
