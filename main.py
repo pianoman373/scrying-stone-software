@@ -17,6 +17,9 @@ def server_thread():
     h_name = socket.gethostname()
     h_ip = socket.gethostbyname(h_name)
 
+    if len(sys.argv) > 1:
+        h_ip = sys.argv[1]
+
     HOST, PORT = h_ip, 7777
 
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -80,6 +83,7 @@ def generate_pointcloud(disparity_map, color_map):
     mask_map = disparity_map > disparity_map.min()
     # Mask colors and points.
     output_points = points_3D[mask_map]
+
     output_colors = colors[mask_map]
 
     # import open3d as o3d
@@ -128,7 +132,6 @@ if __name__ == '__main__':
 
         disp_color = utils.colormap_depth(disp)
         cv2.imshow('disparity', disp_color)
-
 
         generate_pointcloud(disp, img0)
 

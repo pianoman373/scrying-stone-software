@@ -3,7 +3,7 @@ import sys
 import numpy as np
 
 if __name__ == '__main__':
-    HOST, PORT = "192.168.1.4", 7777
+    HOST, PORT = "127.0.1.1", 7777
     data = "hello TCP"
 
     # Create a socket (SOCK_STREAM means a TCP socket)
