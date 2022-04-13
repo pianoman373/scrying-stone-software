@@ -3,12 +3,24 @@ import numpy as np
 import cv2
 
 
-def undistort_fisheye(img, K, D):
+
+def undistort_pinhole(img, K, D, R):
     h, w = img.shape[:2]
 
     # undistort
     #new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(K, D, (w, h), np.eye(3), balance=0.0)
-    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, (w, h), cv2.CV_16SC2)
+    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, R, K, (w, h), cv2.CV_16SC2)
+    # undistorted_img = cv.fisheye.undistortImage(img, K, D)
+    undistorted_img = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+
+    return undistorted_img
+
+def undistort_fisheye(img, K, D, R):
+    h, w = img.shape[:2]
+
+    # undistort
+    #new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(K, D, (w, h), np.eye(3), balance=0.0)
+    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, R, K, (w, h), cv2.CV_16SC2)
     # undistorted_img = cv.fisheye.undistortImage(img, K, D)
     undistorted_img = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
 

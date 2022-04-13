@@ -3,7 +3,6 @@ import numpy as np
 import cv2 as cv
 import glob
 import undistort
-import utils
 
 CHECKERBOARD = (6,9)
 
@@ -12,7 +11,7 @@ criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.1)
 
 checkerboard_flags = cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FILTER_QUADS
 
-calibration_flags = cv.CALIB_FIX_K4 + cv.CALIB_FIX_K5
+calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC + cv2.fisheye.CALIB_CHECK_COND + cv2.fisheye.CALIB_FIX_SKEW
 
 stereo_calibration_flags = cv2.CALIB_FIX_INTRINSIC
 
@@ -27,8 +26,8 @@ objpoints = [] # 3d point in real world space
 
 imgpoints0 = [] # 2d points in image plane.
 imgpoints1 = [] # 2d points in image plane.
-images0 = glob.glob('./calibration_images/left/*.png')
-images1 = glob.glob('./calibration_images/right/*.png')
+images0 = glob.glob('./calibration_images/old/left/*.png')
+images1 = glob.glob('./calibration_images/old/right/*.png')
 
 if __name__ == "__main__":
     cv2.namedWindow('frame0', cv2.WINDOW_NORMAL)
@@ -39,7 +38,7 @@ if __name__ == "__main__":
 
     print("gathering points")
 
-    for i in range(len(images0)):
+    for i in range(min(len(images0), 19)):
         fname0 = images0[i]
         fname1 = images1[i]
         img0 = cv.imread(fname0)
@@ -91,7 +90,7 @@ if __name__ == "__main__":
 
     print("computing intrinsics")
 
-    rms, _, _, _, _ = cv.calibrateCamera(
+    rms, _, _, _, _ = cv.fisheye.calibrate(
         objpoints,
         imgpoints0,
         gray0.shape[::-1],
@@ -99,10 +98,11 @@ if __name__ == "__main__":
         D0,
         rvecs0,
         tvecs0,
-        calibration_flags
+        calibration_flags,
+        criteria
     )
 
-    rms, _, _, _, _ = cv.calibrateCamera(
+    rms, _, _, _, _ = cv.fisheye.calibrate(
         objpoints,
         imgpoints1,
         gray1.shape[::-1],
@@ -133,7 +133,7 @@ if __name__ == "__main__":
         D0,
         K1,
         D1,
-        (w,h),
+        (w, h),
         R,
         T,
         E,

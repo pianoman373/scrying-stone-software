@@ -40,7 +40,12 @@ class CameraFeed:
         for arg in sys.argv[1:]:
             if arg == "-w":
                 self.gstreamer = False
-                break
+
+            if arg == "-o":
+                if self.index == 0:
+                    self.index = 1
+                elif self.index == 1:
+                    self.index = 3
 
         if self.gstreamer:
             if gstream_cap == None:
@@ -51,7 +56,7 @@ class CameraFeed:
 
 
         else:
-            self.cap = cv2.VideoCapture(index)
+            self.cap = cv2.VideoCapture(self.index)
 
         if not self.cap.isOpened():
             print("Error opening video stream")

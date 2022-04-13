@@ -18,7 +18,7 @@ def reconstruct_init():
     cv2.createTrackbar('minDisparity', 'disp', 0, 17, nothing)
     cv2.createTrackbar('maxDisparity', 'disp', 10, 100, nothing)
     cv2.createTrackbar('blockSize', 'disp', 3, 11, nothing)
-    cv2.createTrackbar('uniquenessRatio', 'disp', 0, 20, nothing)
+    cv2.createTrackbar('uniquenessRatio', 'disp', 18, 20, nothing)
     cv2.createTrackbar('speckleWindowSize', 'disp', 100, 200, nothing)
     cv2.createTrackbar('speckleRange', 'disp', 100, 200, nothing)
     cv2.createTrackbar('disp12MaxDiff', 'disp', 200, 600, nothing)
@@ -61,7 +61,18 @@ def reconstruct(img_1, img_2):
                                    P1=P1*blockSize*blockSize,  # 8*3*win_size**2,
                                    P2=P2*blockSize*blockSize)  # 32*3*win_size**2)
 
+
     disparity_map = stereo.compute(img_1_downsampled, img_2_downsampled)
+    disparity_map_right = stereo.compute(img_2_downsampled, img_1_downsampled)
+    #
+    # filter = cv2.ximgproc.createDisparityWLSFilter(stereo)
+    #
+    # filtered = filter.filter(disparity_map, img_1_downsampled, img_2_downsampled, disparity_map)
+    #
+    #
+    # confidence = filter.getConfidenceMap()
+    #
+    # cv2.imshow('confidence', confidence)
 
     return disparity_map
 
