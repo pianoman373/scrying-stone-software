@@ -163,8 +163,8 @@ if __name__ == '__main__':
     while True:
         img0 = cam0.read(False)
         img1 = cam1.read(False)
-        img0 = cv2.imread('calibration_images/old/left/image26.png')
-        img1 = cv2.imread('calibration_images/old/right/image26.png')
+        img0 = cv2.imread('calibration_images/left/image26.png')
+        img1 = cv2.imread('calibration_images/right/image26.png')
 
         img0 = undistort.undistort_pinhole(img0, K0, D0, R0)
         img1 = undistort.undistort_pinhole(img1, K1, D1, R1)
