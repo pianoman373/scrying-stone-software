@@ -13,6 +13,22 @@ def crop_right(img):
     cropped_img = img[0:img.shape[0], int(img.shape[1]/2):int(img.shape[1])]
     return cropped_img
 
+def crop_sphere(image, radius):
+    # define circles
+    hh, ww = image.shape[:2]
+    hh2 = hh // 2
+    ww2 = ww // 2
+    yc = hh2
+    xc = ww2
+
+    # draw filled circle in white on black background as mask
+    mask = np.zeros_like(image)
+    mask = cv2.circle(mask, (xc, yc), radius, (255, 255, 255), -1)
+
+    # apply mask to image
+    result = cv2.bitwise_and(image, mask)
+
+    return result
 
 # Function that Downsamples image x number (reduce_factor) of times.
 def downsample_image(image, reduce_factor):

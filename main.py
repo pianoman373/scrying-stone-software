@@ -80,7 +80,7 @@ def generate_pointcloud(disparity_map, color_map, K, D, Q):
 
     h, w = disparity_map.shape[:2]
     # Load focal length.
-    focal_length = 10.76
+    focal_length = 0.76
 
     # Perspective transformation matrix
     # This transformation matrix is from the openCV documentation, didn't seem to work for me.
@@ -108,10 +108,10 @@ def generate_pointcloud(disparity_map, color_map, K, D, Q):
     # Mask colors and points.
     output_points = points_3D[mask_map]
 
-    # for i in range(len(output_points)):
-    #     point = output_points[i]
-    #     output_points[i] = [point[0], point[1] + h, 2000 - point[2]]
-    #     output_points[i] = K_inv[:3, :3] @ [point[0], point[1], 1] * (point[2])
+    for i in range(len(output_points)):
+        point = output_points[i]
+        output_points[i] = [point[0], point[1] + h, 150 - point[2]]
+        output_points[i] = K_inv[:3, :3] @ [point[0], point[1], 1] * (point[2])
 
     output_colors = colors[mask_map]
 
@@ -144,8 +144,8 @@ def generate_pointcloud(disparity_map, color_map, K, D, Q):
     o3d.visualization.draw_geometries([pcd, line_set])
 
 if __name__ == '__main__':
-    cam0 = camera.CameraFeed(0)
-    cam1 = camera.CameraFeed(1)
+    # cam0 = camera.CameraFeed(0)
+    # cam1 = camera.CameraFeed(1)
 
     #t1 = threading.Thread(target=server_thread, args=())
     #t1.start()
@@ -161,16 +161,16 @@ if __name__ == '__main__':
     Q = np.load("camera_params/Q.npy")
 
     while True:
-        img0 = cam0.read(False)
-        img1 = cam1.read(False)
+        # img0 = cam0.read(False)
+        # img1 = cam1.read(False)
         img0 = cv2.imread('calibration_images/left/image26.png')
         img1 = cv2.imread('calibration_images/right/image26.png')
 
         img0 = undistort.undistort_pinhole(img0, K0, D0, R0)
         img1 = undistort.undistort_pinhole(img1, K1, D1, R1)
-        #
-        # img0 = cv2.imread('im0.png')
-        # img1 = cv2.imread('im1.png')
+
+        img0 = cv2.imread('im0.png')
+        img1 = cv2.imread('im1.png')
 
         cv2.imshow("cam0", img0)
         cv2.imshow("cam1", img1)

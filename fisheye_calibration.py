@@ -13,7 +13,7 @@ checkerboard_flags = cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FILTER_QUADS
 
 calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC + cv2.fisheye.CALIB_CHECK_COND + cv2.fisheye.CALIB_FIX_SKEW
 
-stereo_calibration_flags = cv2.CALIB_FIX_INTRINSIC
+stereo_calibration_flags = 0
 
 stereo_rectify_flags = 0
 
@@ -26,8 +26,8 @@ objpoints = [] # 3d point in real world space
 
 imgpoints0 = [] # 2d points in image plane.
 imgpoints1 = [] # 2d points in image plane.
-images0 = glob.glob('./calibration_images/old/left/*.png')
-images1 = glob.glob('./calibration_images/old/right/*.png')
+images0 = glob.glob('./calibration_images/left/*.png')
+images1 = glob.glob('./calibration_images/right/*.png')
 
 if __name__ == "__main__":
     cv2.namedWindow('frame0', cv2.WINDOW_NORMAL)
@@ -90,28 +90,28 @@ if __name__ == "__main__":
 
     print("computing intrinsics")
 
-    rms, _, _, _, _ = cv.fisheye.calibrate(
-        objpoints,
-        imgpoints0,
-        gray0.shape[::-1],
-        K0,
-        D0,
-        rvecs0,
-        tvecs0,
-        calibration_flags,
-        criteria
-    )
-
-    rms, _, _, _, _ = cv.fisheye.calibrate(
-        objpoints,
-        imgpoints1,
-        gray1.shape[::-1],
-        K1,
-        D1,
-        rvecs1,
-        tvecs1,
-        calibration_flags
-    )
+    # rms, _, _, _, _ = cv.fisheye.calibrate(
+    #     objpoints,
+    #     imgpoints0,
+    #     gray0.shape[::-1],
+    #     K0,
+    #     D0,
+    #     rvecs0,
+    #     tvecs0,
+    #     calibration_flags,
+    #     criteria
+    # )
+    #
+    # rms, _, _, _, _ = cv.fisheye.calibrate(
+    #     objpoints,
+    #     imgpoints1,
+    #     gray1.shape[::-1],
+    #     K1,
+    #     D1,
+    #     rvecs1,
+    #     tvecs1,
+    #     calibration_flags
+    # )
 
     print("K0: ", K0)
     print("K1: ", K1)
@@ -124,8 +124,12 @@ if __name__ == "__main__":
     E = np.zeros((3, 3))
     F = np.zeros((3, 3))
 
+
     print("performing stereo calibration...")
-    rms, _, _, _, _, _, _, _, _ = cv.stereoCalibrate(
+    print(len(objpoints))
+    print(len(imgpoints0))
+    print(len(imgpoints1))
+    rms, _, _, _, _, _, _, _, _ = cv.fisheye.stereoCalibrate(
         objpoints,
         imgpoints0,
         imgpoints1,
@@ -136,9 +140,8 @@ if __name__ == "__main__":
         (w, h),
         R,
         T,
-        E,
-        F,
-        stereo_calibration_flags
+        stereo_calibration_flags,
+        criteria
     )
 
     print("R: ", R)
@@ -182,8 +185,8 @@ if __name__ == "__main__":
 
     np.save("camera_params/Q.npy", Q)
 
-    undistorted_img0 = undistort.undistort_pinhole(img0, K0, D0, R)
-    undistorted_img1 = undistort.undistort_pinhole(img1, K1, D1, R)
+    undistorted_img0 = undistort.undistort_fisheye(img0, K0, D0, R)
+    undistorted_img1 = undistort.undistort_fisheye(img1, K1, D1, R)
 
     cv2.namedWindow('frame0', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('frame0', 400, 400)
