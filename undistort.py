@@ -9,7 +9,7 @@ def undistort_pinhole(img, K, D, R):
 
     # undistort
     #new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(K, D, (w, h), np.eye(3), balance=0.0)
-    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, R, K, (w, h), cv2.CV_16SC2)
+    map1, map2 = cv2.initUndistortRectifyMap(K, D, R, K, (w, h), cv2.CV_16SC2)
     # undistorted_img = cv.fisheye.undistortImage(img, K, D)
     undistorted_img = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
 

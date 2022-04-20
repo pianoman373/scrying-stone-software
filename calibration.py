@@ -44,6 +44,9 @@ if __name__ == "__main__":
         fname1 = images1[i]
         img0 = cv.imread(fname0)
         img1 = cv.imread(fname1)
+        #
+        # img0 = utils.crop_sphere(img0, 350)
+        # img1 = utils.crop_sphere(img1, 350)
 
         gray0 = cv.cvtColor(img0, cv.COLOR_BGR2GRAY)
         gray1 = cv.cvtColor(img1, cv.COLOR_BGR2GRAY)
@@ -76,6 +79,8 @@ if __name__ == "__main__":
 
     img0 = cv.imread(images0[0])
     img1 = cv.imread(images1[0])
+    # img0 = utils.crop_sphere(img0, 350)
+    # img1 = utils.crop_sphere(img1, 350)
     gray_image0 = cv.cvtColor(img0, cv.COLOR_BGR2GRAY)
     gray_image1 = cv.cvtColor(img1, cv.COLOR_BGR2GRAY)
 

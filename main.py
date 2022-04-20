@@ -100,18 +100,18 @@ def generate_pointcloud(disparity_map, color_map, K, D, Q):
                      [0, 0, 0, 1]])
 
     # Reproject points into 3D
-    points_3D = cv2.reprojectImageTo3D(disparity_map, Q2)
+    points_3D = cv2.reprojectImageTo3D(disparity_map, K_inv)
     # Get color points
     colors = cv2.cvtColor(color_map, cv2.COLOR_BGR2RGB)
     # Get rid of points with value 0 (i.e no depth)
-    mask_map = disparity_map > 0
+    mask_map = disparity_map > 100
     # Mask colors and points.
     output_points = points_3D[mask_map]
-
-    for i in range(len(output_points)):
-        point = output_points[i]
-        output_points[i] = [point[0], point[1] + h, 150 - point[2]]
-        output_points[i] = K_inv[:3, :3] @ [point[0], point[1], 1] * (point[2])
+    #
+    # for i in range(len(output_points)):
+    #     point = output_points[i]
+    #     output_points[i] = [point[0], point[1] + h, 150 - point[2]]
+    #     output_points[i] = K_inv[:3, :3] @ [point[0], point[1], 1] * (point[2])
 
     output_colors = colors[mask_map]
 
@@ -163,17 +163,24 @@ if __name__ == '__main__':
     while True:
         # img0 = cam0.read(False)
         # img1 = cam1.read(False)
-        img0 = cv2.imread('calibration_images/left/image26.png')
-        img1 = cv2.imread('calibration_images/right/image26.png')
+        img0 = cv2.imread('MovementTest/left/image0.png')
+        img1 = cv2.imread('MovementTest/right/image0.png')
+
+        img0 = cv2.fastNlMeansDenoisingColored(img0, None, 4, 4, 7, 21)
+        img1 = cv2.fastNlMeansDenoisingColored(img1, None, 4, 4, 7, 21)
 
         img0 = undistort.undistort_pinhole(img0, K0, D0, R0)
         img1 = undistort.undistort_pinhole(img1, K1, D1, R1)
+        #
+        # img0 = cv2.imread('im0.png')
+        # img1 = cv2.imread('im1.png')
+        # img0 = utils.downsample_image(img0, 2)
+        # img1 = utils.downsample_image(img1, 2)
 
-        img0 = cv2.imread('im0.png')
-        img1 = cv2.imread('im1.png')
-
-        cv2.imshow("cam0", img0)
-        cv2.imshow("cam1", img1)
+        img0_lines = utils.draw_stereo_lines(img0)
+        img1_lines = utils.draw_stereo_lines(img1)
+        cv2.imshow("cam0", img0_lines)
+        cv2.imshow("cam1", img1_lines)
 
         #img0 = utils.downsample_image(img0, 1)
         #img1 = utils.downsample_image(img1, 1)
@@ -187,7 +194,7 @@ if __name__ == '__main__':
         disp_color = utils.colormap_depth(disp)
         cv2.imshow('disparity', disp_color)
 
-        generate_pointcloud(disp, img0, K0, D0, Q)
+        #generate_pointcloud(disp, img0, K0, D0, Q)
 
         key = cv2.waitKey(20)
         if key == 27:  # exit on esc

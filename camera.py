@@ -18,7 +18,7 @@ def gstreamer_pipeline(
         "nvvidconv flip-method=%d ! "
         "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
         "videoconvert ! "
-        "video/x-raw, format=(string)BGR ! appsink drop=True"
+        "video/x-raw, format=(string)BGR ! appsink drop=True !"
         % (
             capture_width,
             capture_height,
@@ -36,6 +36,7 @@ class CameraFeed:
         global gstream_cap
         self.index = index
         self.gstreamer = True
+        self.fisheye = True
 
         for arg in sys.argv[1:]:
             if arg == "-w":
@@ -46,6 +47,9 @@ class CameraFeed:
                     self.index = 1
                 elif self.index == 1:
                     self.index = 3
+
+            if arg == "p":
+                self.fisheye = False
 
         if self.gstreamer:
             if gstream_cap == None:

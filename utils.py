@@ -28,6 +28,8 @@ def crop_sphere(image, radius):
     # apply mask to image
     result = cv2.bitwise_and(image, mask)
 
+    result = crop_padding(result, ww2-radius, ww2-radius, hh2-radius, hh2-radius)
+
     return result
 
 # Function that Downsamples image x number (reduce_factor) of times.
@@ -50,3 +52,12 @@ def colormap_depth(image):
     disp = scaledDisparity.astype(np.uint8)
 
     return cv2.applyColorMap(disp, cv2.COLORMAP_JET)
+
+def draw_stereo_lines(image):
+    ret_image = image.copy()
+
+    #draw n horizontal lines across image
+    for i in range(0, image.shape[0], 10):
+        cv2.line(ret_image, (0, i), (image.shape[1], i), (0, 255, 0), 1)
+
+    return ret_image
