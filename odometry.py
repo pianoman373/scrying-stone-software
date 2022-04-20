@@ -7,14 +7,26 @@ import open3d as o3d
 import disparity
 import undistort
 import utils
-
-# images0 = glob.glob("./mav0/cam0/data/*.png")
-# images1 = glob.glob('./mav0/cam1/data/*.png')
-images0 = glob.glob("./00/image_0/*.png")
-images1 = glob.glob('./00/image_1/*.png')
 #
-# images0 = glob.glob("./MovementTest/left/*.png")
-# images1 = glob.glob('./MovementTest/right/*.png')
+# images0 = glob.glob("D:/mav0/cam0/data/*.png")
+# images1 = glob.glob('D:/mav0/cam1/data/*.png')
+images0 = glob.glob("D:/00/image_0/*.png")
+images1 = glob.glob('D:/00/image_1/*.png')
+#
+# images0 = glob.glob("D:/MovementTest/left/*.png")
+# images1 = glob.glob('D:/MovementTest/right/*.png')
+
+import re
+def atoi(text):
+    return int(text) if text.isdigit() else text
+def natural_keys(text):
+    return [ atoi(c) for c in re.split('(\d+)',text) ]
+
+
+images0.sort(key=natural_keys)
+images1.sort(key=natural_keys)
+
+
 
 P0 = np.array([7.188560000000e+02,0.000000000000e+00,6.071928000000e+02,0.000000000000e+00,0.000000000000e+00,7.188560000000e+02,1.852157000000e+02,0.000000000000e+00,0.000000000000e+00,0.000000000000e+00,1.000000000000e+00,0.000000000000e+00]).reshape((3,4))
 P1 = np.array([7.188560000000e+02,0.000000000000e+00,6.071928000000e+02,-3.861448000000e+02,0.000000000000e+00,7.188560000000e+02,1.852157000000e+02,0.000000000000e+00,0.000000000000e+00,0.000000000000e+00,1.000000000000e+00,0.000000000000e+00]).reshape((3,4))
@@ -160,6 +172,11 @@ def estimate_motion(matches, kp1, kp2, k, depth1, max_depth=3000):
 
     return rmat, tvec, image1_points, image2_points
 
+def generate_pointcloud(depth, color):
+    w, h = depth.shape[:2]
+
+
+
 if __name__ == "__main__":
     # cv2.namedWindow('old frame', cv2.WINDOW_NORMAL)
     # cv2.resizeWindow('old frame', 400, 400)
@@ -178,7 +195,7 @@ if __name__ == "__main__":
     # Decompose left camera projection matrix to get intrinsic k matrix
     k_left, r_left, t_left = decompose_projection_matrix(P0)
 
-    id = 1000
+    id = 1
 
     T_tot = np.eye(4)
     trajectory = np.zeros((len(images0), 3, 4))
@@ -187,6 +204,29 @@ if __name__ == "__main__":
 
     vis = o3d.visualization.Visualizer()
     vis.create_window()
+
+    points = [
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1]
+    ]
+    lines = [
+        [0, 1],
+        [0, 2],
+        [0, 3]
+    ]
+    colors = [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1]
+    ]
+    line_set = o3d.geometry.LineSet(
+        points=o3d.utility.Vector3dVector(points),
+        lines=o3d.utility.Vector2iVector(lines),
+    )
+    line_set.colors = o3d.utility.Vector3dVector(colors)
+    vis.add_geometry(line_set)
 
     while True:
         if id >= len(images0):
@@ -197,7 +237,7 @@ if __name__ == "__main__":
         right_frame = cv2.imread(images1[id])
 
         height, width = right_frame.shape[:2]
-        T = np.float32([[1, 0, 000], [0, 1, -26]])
+        T = np.float32([[1, 0, 000], [0, 1, -29]])
 
         # We use warpAffine to transform
         # the image using the matrix, T
@@ -256,27 +296,14 @@ if __name__ == "__main__":
         cv2.imshow("new frame", current_frame)
         cv2.imshow("right frame", right_frame)
 
-        points = [
-            [0, 0, 0],
-            [100, 0, 0],
-            [0, 100, 0],
-            [0, 0, 100]
-        ]
-        lines = [
-            [0, 1],
-            [0, 2],
-            [0, 3]
-        ]
-        colors = [
-            [1, 0, 0],
-            [0, 1, 0],
-            [0, 0, 1]
-        ]
-        line_set = o3d.geometry.LineSet(
-            points=o3d.utility.Vector3dVector(points),
-            lines=o3d.utility.Vector2iVector(lines),
-        )
-        line_set.colors = o3d.utility.Vector3dVector(colors)
+        generate_pointcloud(depth, current_frame)
+
+        position = [xs[-2]*0.01, ys[-2]*0.01, zs[-2]*0.01]
+
+        line_set.points.append([position[0], position[1], position[2]])
+        line_set.colors.append([255, 0, 0])
+        p = len(line_set.points)
+        line_set.lines.append([p, p - 1])
 
         vis.update_geometry(line_set)
         vis.poll_events()
