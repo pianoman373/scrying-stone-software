@@ -5,12 +5,12 @@ import glob
 import undistort
 import utils
 
-CHECKERBOARD = (6,9)
+CHECKERBOARD = (6,7)
 
 # termination criteria
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.1)
 
-checkerboard_flags = cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FILTER_QUADS
+checkerboard_flags = cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FILTER_QUADS + cv2.CALIB_CB_FAST_CHECK
 
 calibration_flags = cv.CALIB_FIX_K4 + cv.CALIB_FIX_K5
 
@@ -27,8 +27,8 @@ objpoints = [] # 3d point in real world space
 
 imgpoints0 = [] # 2d points in image plane.
 imgpoints1 = [] # 2d points in image plane.
-images0 = glob.glob('./calibration_images/left/*.png')
-images1 = glob.glob('./calibration_images/right/*.png')
+images0 = glob.glob('./mav0/calibration/cam0/data/*.png')
+images1 = glob.glob('./mav0/calibration/cam1/data/*.png')
 
 if __name__ == "__main__":
     cv2.namedWindow('frame0', cv2.WINDOW_NORMAL)
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     print("gathering points")
 
-    for i in range(len(images0)):
+    for i in range(0, len(images0), 20):
         fname0 = images0[i]
         fname1 = images1[i]
         img0 = cv.imread(fname0)
@@ -47,9 +47,12 @@ if __name__ == "__main__":
         #
         # img0 = utils.crop_sphere(img0, 350)
         # img1 = utils.crop_sphere(img1, 350)
+        cv.imshow('frame0', img0)
+        cv.imshow('frame1', img1)
 
         gray0 = cv.cvtColor(img0, cv.COLOR_BGR2GRAY)
         gray1 = cv.cvtColor(img1, cv.COLOR_BGR2GRAY)
+
 
         # Find the chess board corners
         ret0, corners0 = cv.findChessboardCorners(gray0, CHECKERBOARD, checkerboard_flags)
@@ -73,7 +76,10 @@ if __name__ == "__main__":
             cv.imshow('frame1', img1)
             cv.waitKey(500)
         else:
+
             print("chessboard not found")
+
+        cv2.waitKey(10)
 
     cv.destroyAllWindows()
 
@@ -129,6 +135,12 @@ if __name__ == "__main__":
     E = np.zeros((3, 3))
     F = np.zeros((3, 3))
 
+    np.save("camera_params/K0.npy", K0)
+    np.save("camera_params/K1.npy", K1)
+
+    np.save("camera_params/D0.npy", D0)
+    np.save("camera_params/D1.npy", D1)
+
     print("performing stereo calibration...")
     rms, _, _, _, _, _, _, _, _ = cv.stereoCalibrate(
         objpoints,
@@ -142,8 +154,7 @@ if __name__ == "__main__":
         R,
         T,
         E,
-        F,
-        stereo_calibration_flags
+        F
     )
 
     print("R: ", R)
@@ -173,12 +184,6 @@ if __name__ == "__main__":
         Q
     )
 
-    np.save("camera_params/K0.npy", K0)
-    np.save("camera_params/K1.npy", K1)
-
-    np.save("camera_params/D0.npy", D0)
-    np.save("camera_params/D1.npy", D1)
-
     np.save("camera_params/R0.npy", R0)
     np.save("camera_params/R1.npy", R1)
 
@@ -187,8 +192,8 @@ if __name__ == "__main__":
 
     np.save("camera_params/Q.npy", Q)
 
-    undistorted_img0 = undistort.undistort_pinhole(img0, K0, D0, R)
-    undistorted_img1 = undistort.undistort_pinhole(img1, K1, D1, R)
+    undistorted_img0 = undistort.undistort_pinhole(img0, K0, D0, R, P0)
+    undistorted_img1 = undistort.undistort_pinhole(img1, K1, D1, R, P1)
 
     cv2.namedWindow('frame0', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('frame0', 400, 400)
@@ -197,6 +202,9 @@ if __name__ == "__main__":
     cv2.resizeWindow('frame1', 400, 400)
 
     print("complete!")
+
+    undistorted_img0 = utils.draw_stereo_lines(undistorted_img0)
+    undistorted_img1 = utils.draw_stereo_lines(undistorted_img1)
 
     cv.imshow('frame0', undistorted_img0)
     cv.imshow('frame1', undistorted_img1)
