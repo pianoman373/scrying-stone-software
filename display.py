@@ -3,7 +3,7 @@ import camera
 import argparse
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Cameera display')
+    parser = argparse.ArgumentParser(description='Camera display')
     parser.add_argument('--mode', type=str, required=True, help='Camera mode. Either gstreamer_fisheye, gstreamer, webcam, or webcam_offset')
     args = parser.parse_args()
 

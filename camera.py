@@ -21,7 +21,7 @@ def gstreamer_pipeline(
         "videoconvert ! "
         "video/x-raw, format=(string)BGR ! appsink drop=True !"
         % (
-        sensor_id,
+            sensor_id,
             capture_width,
             capture_height,
             framerate,
@@ -68,8 +68,8 @@ class CameraFeed:
                     self.cap = gstream_cap
 
             else:
+                print("passing gstreamer args: ", gstreamer_pipeline(index))
                 self.cap = cv2.VideoCapture(gstreamer_pipeline(index), cv2.CAP_GSTREAMER)
-
 
         else:
             self.cap = cv2.VideoCapture(self.index)
@@ -81,7 +81,7 @@ class CameraFeed:
         ret, frame = self.cap.read()
 
         if ret:
-            if self.gstreamer:
+            if self.fisheye:
                 if self.index == 0:
                     frame = utils.crop_left(frame)
 

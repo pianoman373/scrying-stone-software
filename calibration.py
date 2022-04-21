@@ -5,6 +5,7 @@ import glob
 import undistort
 import utils
 import argparse
+import os
 
 # termination criteria
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 1e-5)
@@ -23,10 +24,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Camera calibration')
     parser.add_argument('--output_folder', type=str, required=True, help='Path to the stereo calibration output folder')
     parser.add_argument('--images', type=str, required=True, help='Folder containing left and right images')
-    parser.add_argument('--grid_size', type=tuple, required=False, default=(6, 0, 9), help='Checkerboard grid size')
+    parser.add_argument('--grid_size', type=tuple, required=False, default=(6, 0, 9), help='Checkerboard grid size in the form X,X')
     parser.add_argument('--square_size', type=float, required=False, default=76.4, help='Checkerboard square size (mm)')
+    parser.add_argument('--skip_frames', type=int, required=False, default=1, help='Number of frames to skip')
 
     args = parser.parse_args()
+
+    if not os.path.exists(args.output_folder):
+        os.makedirs(args.output_folder)
 
     CHECKERBOARD = (int(args.grid_size[0]), int(args.grid_size[2]))
 
@@ -48,7 +53,7 @@ if __name__ == "__main__":
 
     print("gathering points")
 
-    for i in range(0, len(images0), 1):
+    for i in range(0, len(images0), args.skip_frames):
         fname0 = images0[i]
         fname1 = images1[i]
         img0 = cv.imread(fname0)
@@ -103,10 +108,9 @@ if __name__ == "__main__":
     h, w = img0.shape[:2]
 
 
-    print("computing intrinsics")
-
+    print("computing left camera intrinsics...")
     ret, K0, D0, rvecs0, tvecs0 = cv2.calibrateCamera(objpoints, imgpoints0, (w, h), None, None)
-
+    print("computing right camera intrinsics...")
     ret, K1, D1, rvecs1, tvecs1 = cv2.calibrateCamera(objpoints, imgpoints1, (w, h), None, None)
 
     print("K0: ", K0)
@@ -128,25 +132,18 @@ if __name__ == "__main__":
     print("F: ", F)
 
     print("performing stereo rectification...")
-
     R0, R1, P0, P1, Q, roi0, roi1 = cv.stereoRectify(K0, D0, K1, D1, (w, h), R, T, flags=cv.CALIB_ZERO_DISPARITY, alpha=0)
 
-    np.save(args.output_foler+"/R0.npy", R0)
-    np.save(args.output_foler+"/R1.npy", R1)
+    np.save(args.output_folder+"/R0.npy", R0)
+    np.save(args.output_folder+"/R1.npy", R1)
 
-    np.save(args.output_foler+"/P0.npy", P0)
-    np.save(args.output_foler+"/P1.npy", P1)
+    np.save(args.output_folder+"/P0.npy", P0)
+    np.save(args.output_folder+"/P1.npy", P1)
 
-    np.save(args.output_foler+"/Q.npy", Q)
+    np.save(args.output_folder+"/Q.npy", Q)
 
-    leftMapX, leftMapY = cv2.initUndistortRectifyMap(K0, D0, R0, P0, (w, h), cv2.CV_32FC1)
-    left_rectified = cv2.remap(img0, leftMapX, leftMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
-
-    rightMapX, rightMapY = cv2.initUndistortRectifyMap(K1, D1, R1, P1, (w, h), cv2.CV_32FC1)
-    right_rectified = cv2.remap(img1, rightMapX, rightMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
-
-    cv2.imwrite("undistorted_left.png", left_rectified)
-    cv2.imwrite("undistorted_right.png", right_rectified)
+    left_rectified = undistort.undistort_pinhole(img0, K0, D0, R0, P0)
+    right_rectified = undistort.undistort_pinhole(img1, K1, D1, R1, P1)
 
     cv2.namedWindow('frame0', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('frame0', 400, 400)
