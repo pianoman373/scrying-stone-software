@@ -8,13 +8,13 @@ import disparity
 import undistort
 import utils
 #
-# images0 = glob.glob("D:/mav0/cam0/data/*.png")
-# images1 = glob.glob('D:/mav0/cam1/data/*.png')
-images0 = glob.glob("D:/00/image_0/*.png")
-images1 = glob.glob('D:/00/image_1/*.png')
+# images0 = glob.glob("./mav0/cam0/data/*.png")
+# images1 = glob.glob('./mav0/cam1/data/*.png')
+# images0 = glob.glob("./00/image_0/*.png")
+# images1 = glob.glob('./00/image_1/*.png')
 #
-# images0 = glob.glob("D:/MovementTest/left/*.png")
-# images1 = glob.glob('D:/MovementTest/right/*.png')
+images0 = glob.glob("./MovementTest/left/*.png")
+images1 = glob.glob('./MovementTest/right/*.png')
 
 import re
 def atoi(text):
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     # Decompose left camera projection matrix to get intrinsic k matrix
     k_left, r_left, t_left = decompose_projection_matrix(P0)
 
-    id = 1
+    id = 1000
 
     T_tot = np.eye(4)
     trajectory = np.zeros((len(images0), 3, 4))
@@ -226,7 +226,10 @@ if __name__ == "__main__":
         lines=o3d.utility.Vector2iVector(lines),
     )
     line_set.colors = o3d.utility.Vector3dVector(colors)
+    pcd = o3d.geometry.PointCloud()
     vis.add_geometry(line_set)
+    vis.add_geometry(pcd)
+
 
     while True:
         if id >= len(images0):
@@ -237,7 +240,7 @@ if __name__ == "__main__":
         right_frame = cv2.imread(images1[id])
 
         height, width = right_frame.shape[:2]
-        T = np.float32([[1, 0, 000], [0, 1, -29]])
+        T = np.float32([[1, 0, 000], [0, 1, -5]])
 
         # We use warpAffine to transform
         # the image using the matrix, T
@@ -288,24 +291,66 @@ if __name__ == "__main__":
         disp_color = utils.colormap_depth(depth)
         cv2.imshow("depth", depth*0.02)
 
-        cv2.drawKeypoints(old_frame, image1_points, old_frame, color=(0,0,255))
+        old_frame_points = old_frame.copy()
+        cv2.drawKeypoints(old_frame, image1_points, old_frame_points, color=(0,0,255))
 
-        cv2.drawKeypoints(current_frame, image2_points, current_frame, color=(0, 0, 255))
+        current_frame_points = current_frame.copy()
+        cv2.drawKeypoints(current_frame, image2_points, current_frame_points, color=(0, 0, 255))
 
-        cv2.imshow("old frame", old_frame)
-        cv2.imshow("new frame", current_frame)
+        cv2.imshow("old frame", old_frame_points)
+        cv2.imshow("new frame", current_frame_points)
         cv2.imshow("right frame", right_frame)
 
         generate_pointcloud(depth, current_frame)
 
-        position = [xs[-2]*0.01, ys[-2]*0.01, zs[-2]*0.01]
+        position = [xs[-2], ys[-2], zs[-2]]
 
         line_set.points.append([position[0], position[1], position[2]])
         line_set.colors.append([255, 0, 0])
         p = len(line_set.points)
-        line_set.lines.append([p, p - 1])
+        line_set.lines.append([p-1, p - 2])
+
+        color_raw = o3d.geometry.Image(current_frame)
+        depth_raw = o3d.geometry.Image(depth.astype(np.float32))
+        rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
+            color_raw, depth_raw)
+
+        cx = k_left[0, 2]
+        cy = k_left[1, 2]
+        fx = k_left[0, 0]
+        fy = k_left[1, 1]
+        intrinsic = o3d.camera.PinholeCameraIntrinsic(width, height, fx, fy, cx, cy)
+        new_pcd = pcd.create_from_rgbd_image(
+            rgbd_image,
+            intrinsic)
+
+        scaling_mat = np.array([[1000, 0, 0, 0], [0, -1000, 0, 0], [0, 0, 1000, 0], [0, 0, 0, 1]])
+        new_pcd.transform(T_tot.dot(scaling_mat))
+
+        # old_points = np.asarray(pcd.points)
+        # new_points = np.asarray(new_pcd.points)
+        # p = np.concatenate((old_points, new_points), axis=0)
+        #
+        # old_colors = np.asarray(pcd.colors)
+        # new_colors = np.asarray(new_pcd.colors)
+        # c = np.concatenate((old_colors, new_colors), axis=0)
+        #
+        # new_pcd.points = o3d.utility.Vector3dVector(p)
+        # new_pcd.colors = o3d.utility.Vector3dVector(c)
+        #
+        # new_pcd = new_pcd.voxel_down_sample(voxel_size=0.01)
+        pcd.points = new_pcd.points
+        pcd.colors = new_pcd.colors
+
+
 
         vis.update_geometry(line_set)
+        vis.update_geometry(pcd)
+
+        vis.get_view_control().set_constant_z_near(0.1)
+        vis.get_view_control().set_constant_z_far(1000)
+        vis.get_view_control().set_lookat(position)
+        vis.get_view_control().set_zoom(10.0)
         vis.poll_events()
         vis.update_renderer()
 
