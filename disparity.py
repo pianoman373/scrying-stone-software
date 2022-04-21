@@ -31,8 +31,8 @@ def reconstruct(img_1, img_2):
     # =========================================================
 
     #convert images to grayscale
-    img1_gray = cv2.cvtColor(img_1, cv2.COLOR_BGR2GRAY)
-    img2_gray = cv2.cvtColor(img_2, cv2.COLOR_BGR2GRAY)
+    img1_gray = img_1
+    img2_gray = img_2
 
     # Downsample each image 3 times (because they're too big)
     img_1_downsampled = img1_gray#downsample_image(img1_gray, 1)

@@ -5,30 +5,35 @@ import glob
 import undistort
 import utils
 
-CHECKERBOARD = (6,7)
+CHECKERBOARD = (6,9)
 
 # termination criteria
-criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.1)
+criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 1e-5)
 
 checkerboard_flags = cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FILTER_QUADS + cv2.CALIB_CB_FAST_CHECK
-
-calibration_flags = cv.CALIB_FIX_K4 + cv.CALIB_FIX_K5
-
-stereo_calibration_flags = cv2.CALIB_FIX_INTRINSIC
-
-stereo_rectify_flags = 0
 
 
 # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
 objp = np.zeros((1, CHECKERBOARD[0]*CHECKERBOARD[1], 3), np.float32)
 objp[:,:,:2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1,2)
+objp = objp * 0.0764 # 76.4 mm square size
 # Arrays to store object points and image points from all the images.
 objpoints = [] # 3d point in real world space
 
 imgpoints0 = [] # 2d points in image plane.
 imgpoints1 = [] # 2d points in image plane.
-images0 = glob.glob('./mav0/calibration/cam0/data/*.png')
-images1 = glob.glob('./mav0/calibration/cam1/data/*.png')
+images0 = glob.glob('D:/PinholeCalb/left/*.png')
+images1 = glob.glob('D:/PinholeCalb/right/*.png')
+
+import re
+def atoi(text):
+    return int(text) if text.isdigit() else text
+def natural_keys(text):
+    return [ atoi(c) for c in re.split('(\d+)',text) ]
+
+
+images0.sort(key=natural_keys)
+images1.sort(key=natural_keys)
 
 if __name__ == "__main__":
     cv2.namedWindow('frame0', cv2.WINDOW_NORMAL)
@@ -39,14 +44,12 @@ if __name__ == "__main__":
 
     print("gathering points")
 
-    for i in range(0, len(images0), 20):
+    for i in range(0, len(images0), 1):
         fname0 = images0[i]
         fname1 = images1[i]
         img0 = cv.imread(fname0)
         img1 = cv.imread(fname1)
-        #
-        # img0 = utils.crop_sphere(img0, 350)
-        # img1 = utils.crop_sphere(img1, 350)
+
         cv.imshow('frame0', img0)
         cv.imshow('frame1', img1)
 
@@ -74,12 +77,12 @@ if __name__ == "__main__":
 
             cv.drawChessboardCorners(img1, CHECKERBOARD, corners3, ret1)
             cv.imshow('frame1', img1)
-            cv.waitKey(500)
+            cv.waitKey(1)
         else:
 
             print("chessboard not found")
 
-        cv2.waitKey(10)
+        cv2.waitKey(1)
 
     cv.destroyAllWindows()
 
@@ -91,71 +94,29 @@ if __name__ == "__main__":
     gray_image1 = cv.cvtColor(img1, cv.COLOR_BGR2GRAY)
 
     N_OK = len(objpoints)
-    K0 = np.zeros((3,3))
-    D0 = np.zeros((4,1))
-    K1 = np.zeros((3,3))
-    D1 = np.zeros((4,1))
-    rvecs0 = [np.zeros((1,1,3), dtype=np.float64) for i in range(N_OK)]
-    tvecs0 = [np.zeros((1,1,3), dtype=np.float64) for i in range(N_OK)]
-    rvecs1 = [np.zeros((1, 1, 3), dtype=np.float64) for i in range(N_OK)]
-    tvecs1 = [np.zeros((1, 1, 3), dtype=np.float64) for i in range(N_OK)]
+
+
+    h, w = img0.shape[:2]
+
 
     print("computing intrinsics")
 
-    rms, _, _, _, _ = cv.calibrateCamera(
-        objpoints,
-        imgpoints0,
-        gray0.shape[::-1],
-        K0,
-        D0,
-        rvecs0,
-        tvecs0,
-        calibration_flags
-    )
+    ret, K0, D0, rvecs0, tvecs0 = cv2.calibrateCamera(objpoints, imgpoints0, (w, h), None, None)
 
-    rms, _, _, _, _ = cv.calibrateCamera(
-        objpoints,
-        imgpoints1,
-        gray1.shape[::-1],
-        K1,
-        D1,
-        rvecs1,
-        tvecs1,
-        calibration_flags
-    )
+    ret, K1, D1, rvecs1, tvecs1 = cv2.calibrateCamera(objpoints, imgpoints1, (w, h), None, None)
 
     print("K0: ", K0)
     print("K1: ", K1)
-    print("D0: ", K0)
-    print("D1: ", K1)
-
-    h, w = img0.shape[:2]
-    R = np.zeros((3, 3))
-    T = np.zeros((3), dtype=np.float64)
-    E = np.zeros((3, 3))
-    F = np.zeros((3, 3))
+    print("D0: ", D0)
+    print("D1: ", D1)
 
     np.save("camera_params/K0.npy", K0)
     np.save("camera_params/K1.npy", K1)
-
     np.save("camera_params/D0.npy", D0)
     np.save("camera_params/D1.npy", D1)
 
     print("performing stereo calibration...")
-    rms, _, _, _, _, _, _, _, _ = cv.stereoCalibrate(
-        objpoints,
-        imgpoints0,
-        imgpoints1,
-        K0,
-        D0,
-        K1,
-        D1,
-        (w,h),
-        R,
-        T,
-        E,
-        F
-    )
+    ret, K0, D0, K1, D1, R, T, E, F = cv.stereoCalibrate(objpoints, imgpoints0, imgpoints1, K0, D0, K1, D1, (w, h), criteria, cv.CALIB_FIX_INTRINSIC)
 
     print("R: ", R)
     print("T: ", T)
@@ -164,25 +125,7 @@ if __name__ == "__main__":
 
     print("performing stereo rectification...")
 
-    R0 = np.zeros((3, 3))
-    R1 = np.zeros((3, 3))
-    P0 = np.zeros((3, 3))
-    P1 = np.zeros((3, 3))
-    Q = np.zeros((4, 4))
-    cv2.stereoRectify(
-        K0,
-        D0,
-        K1,
-        D1,
-        (w,h),
-        R,
-        T,
-        R0,
-        R1,
-        P0,
-        P1,
-        Q
-    )
+    R0, R1, P0, P1, Q, roi0, roi1 = cv.stereoRectify(K0, D0, K1, D1, (w, h), R, T, flags=cv.CALIB_ZERO_DISPARITY, alpha=0)
 
     np.save("camera_params/R0.npy", R0)
     np.save("camera_params/R1.npy", R1)
@@ -192,8 +135,14 @@ if __name__ == "__main__":
 
     np.save("camera_params/Q.npy", Q)
 
-    undistorted_img0 = undistort.undistort_pinhole(img0, K0, D0, R, P0)
-    undistorted_img1 = undistort.undistort_pinhole(img1, K1, D1, R, P1)
+    leftMapX, leftMapY = cv2.initUndistortRectifyMap(K0, D0, R0, P0, (w, h), cv2.CV_32FC1)
+    left_rectified = cv2.remap(img0, leftMapX, leftMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
+
+    rightMapX, rightMapY = cv2.initUndistortRectifyMap(K1, D1, R1, P1, (w, h), cv2.CV_32FC1)
+    right_rectified = cv2.remap(img1, rightMapX, rightMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
+
+    cv2.imwrite("undistorted_left.png", left_rectified)
+    cv2.imwrite("undistorted_right.png", right_rectified)
 
     cv2.namedWindow('frame0', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('frame0', 400, 400)
@@ -203,8 +152,8 @@ if __name__ == "__main__":
 
     print("complete!")
 
-    undistorted_img0 = utils.draw_stereo_lines(undistorted_img0)
-    undistorted_img1 = utils.draw_stereo_lines(undistorted_img1)
+    undistorted_img0 = utils.draw_stereo_lines(left_rectified)
+    undistorted_img1 = utils.draw_stereo_lines(right_rectified)
 
     cv.imshow('frame0', undistorted_img0)
     cv.imshow('frame1', undistorted_img1)

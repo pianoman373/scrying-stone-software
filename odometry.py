@@ -7,14 +7,13 @@ import open3d as o3d
 import disparity
 import undistort
 import utils
-#
-# images0 = glob.glob("./mav0/cam0/data/*.png")
-# images1 = glob.glob('./mav0/cam1/data/*.png')
-# images0 = glob.glob("./00/image_0/*.png")
-# images1 = glob.glob('./00/image_1/*.png')
-#
-images0 = glob.glob("./MovementTest/left/*.png")
-images1 = glob.glob('./MovementTest/right/*.png')
+
+# images0 = glob.glob("D:/mav0/cam0/data/*.png")
+# images1 = glob.glob('D:/mav0/cam1/data/*.png')
+# images0 = glob.glob("D:/00/image_0/*.png")
+# images1 = glob.glob('D:/00/image_1/*.png')
+images0 = glob.glob("D:/MovementTest/left/*.png")
+images1 = glob.glob('D:/MovementTest/right/*.png')
 
 import re
 def atoi(text):
@@ -28,9 +27,11 @@ images1.sort(key=natural_keys)
 
 
 
-P0 = np.array([7.188560000000e+02,0.000000000000e+00,6.071928000000e+02,0.000000000000e+00,0.000000000000e+00,7.188560000000e+02,1.852157000000e+02,0.000000000000e+00,0.000000000000e+00,0.000000000000e+00,1.000000000000e+00,0.000000000000e+00]).reshape((3,4))
-P1 = np.array([7.188560000000e+02,0.000000000000e+00,6.071928000000e+02,-3.861448000000e+02,0.000000000000e+00,7.188560000000e+02,1.852157000000e+02,0.000000000000e+00,0.000000000000e+00,0.000000000000e+00,1.000000000000e+00,0.000000000000e+00]).reshape((3,4))
+# P0 = np.array([7.188560000000e+02,0.000000000000e+00,6.071928000000e+02,0.000000000000e+00,0.000000000000e+00,7.188560000000e+02,1.852157000000e+02,0.000000000000e+00,0.000000000000e+00,0.000000000000e+00,1.000000000000e+00,0.000000000000e+00]).reshape((3,4))
+# P1 = np.array([7.188560000000e+02,0.000000000000e+00,6.071928000000e+02,-3.861448000000e+02,0.000000000000e+00,7.188560000000e+02,1.852157000000e+02,0.000000000000e+00,0.000000000000e+00,0.000000000000e+00,1.000000000000e+00,0.000000000000e+00]).reshape((3,4))
 
+P0 = np.load("camera_params/P0.npy")
+P1 = np.load("camera_params/P1.npy")
 
 def extract_features(image, detector='sift', mask=None):
     """
@@ -178,20 +179,6 @@ def generate_pointcloud(depth, color):
 
 
 if __name__ == "__main__":
-    # cv2.namedWindow('old frame', cv2.WINDOW_NORMAL)
-    # cv2.resizeWindow('old frame', 400, 400)
-    #
-    # cv2.namedWindow('new frame', cv2.WINDOW_NORMAL)
-    # cv2.resizeWindow('new frame', 400, 400)
-    #
-    # cv2.namedWindow('disparity', cv2.WINDOW_NORMAL)
-    # cv2.resizeWindow('disparity', 400, 400)
-
-    # Generate a plt
-    fig = plt.figure(figsize=(14, 14))
-    ax = fig.add_subplot(projection='3d')
-    ax.view_init(elev=-20, azim=270)
-
     # Decompose left camera projection matrix to get intrinsic k matrix
     k_left, r_left, t_left = decompose_projection_matrix(P0)
 
@@ -231,6 +218,13 @@ if __name__ == "__main__":
     vis.add_geometry(pcd)
 
 
+    K0 = np.load('camera_params/K0.npy')
+    K1 = np.load('camera_params/K1.npy')
+    D0 = np.load('camera_params/D0.npy')
+    D1 = np.load('camera_params/D1.npy')
+    R0 = np.load('camera_params/R0.npy')
+    R1 = np.load('camera_params/R1.npy')
+
     while True:
         if id >= len(images0):
             id = 1
@@ -239,12 +233,11 @@ if __name__ == "__main__":
         current_frame = cv2.imread(images0[id])
         right_frame = cv2.imread(images1[id])
 
-        height, width = right_frame.shape[:2]
-        T = np.float32([[1, 0, 000], [0, 1, -5]])
+        old_frame = undistort.undistort_pinhole(old_frame, K0, D0, R0, P0)
+        current_frame = undistort.undistort_pinhole(current_frame, K0, D0, R0, P0)
+        right_frame = undistort.undistort_pinhole(right_frame, K1, D1, R1, P1)
 
-        # We use warpAffine to transform
-        # the image using the matrix, T
-        #right_frame = cv2.warpAffine(right_frame, T, (width, height))
+        height, width = right_frame.shape[:2]
 
         old_frame_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
         current_frame_gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
@@ -255,9 +248,7 @@ if __name__ == "__main__":
         kp1, des1 = extract_features(current_frame_gray)
 
         # Get matches between features detected in two subsequent frames
-        matches_unfilt = match_features(des0,
-                                        des1
-                                        )
+        matches_unfilt = match_features(des0, des1)
 
         # Filter matches if a distance threshold is provided by user
         matches = filter_matches_distance(matches_unfilt)
@@ -327,22 +318,8 @@ if __name__ == "__main__":
         scaling_mat = np.array([[1000, 0, 0, 0], [0, -1000, 0, 0], [0, 0, 1000, 0], [0, 0, 0, 1]])
         new_pcd.transform(T_tot.dot(scaling_mat))
 
-        # old_points = np.asarray(pcd.points)
-        # new_points = np.asarray(new_pcd.points)
-        # p = np.concatenate((old_points, new_points), axis=0)
-        #
-        # old_colors = np.asarray(pcd.colors)
-        # new_colors = np.asarray(new_pcd.colors)
-        # c = np.concatenate((old_colors, new_colors), axis=0)
-        #
-        # new_pcd.points = o3d.utility.Vector3dVector(p)
-        # new_pcd.colors = o3d.utility.Vector3dVector(c)
-        #
-        # new_pcd = new_pcd.voxel_down_sample(voxel_size=0.01)
         pcd.points = new_pcd.points
         pcd.colors = new_pcd.colors
-
-
 
         vis.update_geometry(line_set)
         vis.update_geometry(pcd)
@@ -350,7 +327,7 @@ if __name__ == "__main__":
         vis.get_view_control().set_constant_z_near(0.1)
         vis.get_view_control().set_constant_z_far(1000)
         vis.get_view_control().set_lookat(position)
-        vis.get_view_control().set_zoom(10.0)
+        vis.get_view_control().set_zoom(5.0)
         vis.poll_events()
         vis.update_renderer()
 
