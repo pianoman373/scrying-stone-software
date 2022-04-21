@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+import re
+
 # crop padding from opencv image
 def crop_padding(image, left, right, top, bottom):
     return image[top:image.shape[0]-bottom, left:image.shape[1]-right]
@@ -61,3 +63,11 @@ def draw_stereo_lines(image):
         cv2.line(ret_image, (0, i), (image.shape[1], i), (0, 255, 0), 1)
 
     return ret_image
+
+def atoi(text):
+    return int(text) if text.isdigit() else text
+def natural_keys(text):
+    return [ atoi(c) for c in re.split('(\d+)',text) ]
+
+def sort_files(files):
+    return files.sort(key=natural_keys)

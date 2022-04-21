@@ -3,6 +3,7 @@ import numpy as np
 import threading
 import time
 import camera
+import argparse
 
 chessboard_size = (6, 9)
 corners_list0 = np.zeros(0)
@@ -39,13 +40,18 @@ def back(*args):
     pass
 
 if __name__ == '__main__':
-    cam0 = camera.CameraFeed(0)
-    cam1 = camera.CameraFeed(1)
+    parser = argparse.ArgumentParser(description='Cameera display')
+    parser.add_argument('--mode', type=str, required=True,
+                        help='Camera mode. Either gstreamer_fisheye, gstreamer, webcam, or webcam_offset')
+    args = parser.parse_args()
+
+    cam0 = camera.CameraFeed(0, args.mode)
+    cam1 = camera.CameraFeed(1, args.mode)
     index = 0
 
     while True:
-        frame0 = cam0.read(False)
-        frame1 = cam1.read(False)
+        frame0 = cam0.read()
+        frame1 = cam1.read()
 
         gray_frame0 = cv2.cvtColor(frame0, cv2.COLOR_BGR2GRAY)
         gray_frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)

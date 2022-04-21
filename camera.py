@@ -4,6 +4,7 @@ import utils
 
 
 def gstreamer_pipeline(
+    sensor_id=0,
     capture_width=3280,
     capture_height=2464,
     display_width=1680,
@@ -12,7 +13,7 @@ def gstreamer_pipeline(
     flip_method=0,
 ):
     return (
-        "nvarguscamerasrc ! "
+        "nvarguscamerasrc sensor_id=%d ! "
         "video/x-raw(memory:NVMM), "
         "width=(int)%d, height=(int)%d, framerate=(fraction)%d/1 ! "
         "nvvidconv flip-method=%d ! "
@@ -20,6 +21,7 @@ def gstreamer_pipeline(
         "videoconvert ! "
         "video/x-raw, format=(string)BGR ! appsink drop=True !"
         % (
+        sensor_id,
             capture_width,
             capture_height,
             framerate,
@@ -32,31 +34,41 @@ def gstreamer_pipeline(
 gstream_cap = None
 
 class CameraFeed:
-    def __init__(self, index):
+    def __init__(self, index, config):
         global gstream_cap
         self.index = index
-        self.gstreamer = True
-        self.fisheye = True
+        self.gstreamer = False
+        self.fisheye = False
 
-        for arg in sys.argv[1:]:
-            if arg == "-w":
-                self.gstreamer = False
+        if config == 'gstreamer_fisheye':
+            self.gstreamer = True
+            self.fisheye = True
 
-            if arg == "-o":
-                if self.index == 0:
-                    self.index = 1
-                elif self.index == 1:
-                    self.index = 3
+        if config == 'gstreamer':
+            self.gstreamer = True
+            self.fisheye = False
 
-            if arg == "p":
-                self.fisheye = False
+        if config == 'webcam':
+            self.gstreamer = False
+            self.fisheye = False
+
+        if config == 'webcam_offset':
+            if self.index == 0:
+                self.index = 1
+            elif self.index == 1:
+                self.index = 3
+
 
         if self.gstreamer:
-            if gstream_cap == None:
-                self.cap = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
-                gstream_cap = self.cap
+            if self.fisheye:
+                if gstream_cap == None:
+                    self.cap = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
+                    gstream_cap = self.cap
+                else:
+                    self.cap = gstream_cap
+
             else:
-                self.cap = gstream_cap
+                self.cap = cv2.VideoCapture(gstreamer_pipeline(index), cv2.CAP_GSTREAMER)
 
 
         else:
@@ -65,7 +77,7 @@ class CameraFeed:
         if not self.cap.isOpened():
             print("Error opening video stream")
 
-    def read(self, padding=True):
+    def read(self):
         ret, frame = self.cap.read()
 
         if ret:
@@ -76,10 +88,10 @@ class CameraFeed:
                 if self.index == 1:
                     frame = utils.crop_right(frame)
 
-                if padding:
-                    frame = utils.crop_padding(frame, 150, 150, 150, 150)
-
             return frame
         else:
             print("Error reading video capture")
             return None
+
+    def release(self):
+        self.cap.release()

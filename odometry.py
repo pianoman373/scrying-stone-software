@@ -15,7 +15,6 @@ import utils
 images0 = glob.glob("D:/MovementTest/left/*.png")
 images1 = glob.glob('D:/MovementTest/right/*.png')
 
-import re
 def atoi(text):
     return int(text) if text.isdigit() else text
 def natural_keys(text):
@@ -24,8 +23,6 @@ def natural_keys(text):
 
 images0.sort(key=natural_keys)
 images1.sort(key=natural_keys)
-
-
 
 # P0 = np.array([7.188560000000e+02,0.000000000000e+00,6.071928000000e+02,0.000000000000e+00,0.000000000000e+00,7.188560000000e+02,1.852157000000e+02,0.000000000000e+00,0.000000000000e+00,0.000000000000e+00,1.000000000000e+00,0.000000000000e+00]).reshape((3,4))
 # P1 = np.array([7.188560000000e+02,0.000000000000e+00,6.071928000000e+02,-3.861448000000e+02,0.000000000000e+00,7.188560000000e+02,1.852157000000e+02,0.000000000000e+00,0.000000000000e+00,0.000000000000e+00,1.000000000000e+00,0.000000000000e+00]).reshape((3,4))

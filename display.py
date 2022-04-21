@@ -1,14 +1,19 @@
 import cv2
 import camera
+import argparse
 
 if __name__ == '__main__':
-    cam = camera.CameraFeed(0)
-    cam2 = camera.CameraFeed(1)
+    parser = argparse.ArgumentParser(description='Cameera display')
+    parser.add_argument('--mode', type=str, required=True, help='Camera mode. Either gstreamer_fisheye, gstreamer, webcam, or webcam_offset')
+    args = parser.parse_args()
+
+    cam = camera.CameraFeed(0, args.mode)
+    cam2 = camera.CameraFeed(1, args.mode)
     cv2.namedWindow("video")
 
     while True:
-        frame = cam.read(False)
-        frame2 = cam2.read(False)
+        frame = cam.read()
+        frame2 = cam2.read()
 
         cv2.imshow('video', frame)
         cv2.imshow('video2', frame2)
@@ -18,4 +23,5 @@ if __name__ == '__main__':
             break
 
     cam.release()
+    cam2.release()
     cv2.destroyAllWindows()

@@ -4,8 +4,7 @@ import cv2 as cv
 import glob
 import undistort
 import utils
-
-CHECKERBOARD = (6,9)
+import argparse
 
 # termination criteria
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 1e-5)
@@ -13,29 +12,34 @@ criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 1e-5)
 checkerboard_flags = cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FILTER_QUADS + cv2.CALIB_CB_FAST_CHECK
 
 
-# prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-objp = np.zeros((1, CHECKERBOARD[0]*CHECKERBOARD[1], 3), np.float32)
-objp[:,:,:2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1,2)
-objp = objp * 0.0764 # 76.4 mm square size
+
 # Arrays to store object points and image points from all the images.
 objpoints = [] # 3d point in real world space
 
 imgpoints0 = [] # 2d points in image plane.
 imgpoints1 = [] # 2d points in image plane.
-images0 = glob.glob('D:/PinholeCalb/left/*.png')
-images1 = glob.glob('D:/PinholeCalb/right/*.png')
-
-import re
-def atoi(text):
-    return int(text) if text.isdigit() else text
-def natural_keys(text):
-    return [ atoi(c) for c in re.split('(\d+)',text) ]
-
-
-images0.sort(key=natural_keys)
-images1.sort(key=natural_keys)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Camera calibration')
+    parser.add_argument('--output_folder', type=str, required=True, help='Path to the stereo calibration output folder')
+    parser.add_argument('--images', type=str, required=True, help='Folder containing left and right images')
+    parser.add_argument('--grid_size', type=tuple, required=False, default=(6, 0, 9), help='Checkerboard grid size')
+    parser.add_argument('--square_size', type=float, required=False, default=76.4, help='Checkerboard square size (mm)')
+
+    args = parser.parse_args()
+
+    CHECKERBOARD = (int(args.grid_size[0]), int(args.grid_size[2]))
+
+    # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
+    objp = np.zeros((1, CHECKERBOARD[0] * CHECKERBOARD[1], 3), np.float32)
+    objp[:, :, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
+    objp = objp * 0.001 * args.square_size
+
+    images0 = glob.glob(args.images + "/left/*.png")
+    images1 = glob.glob(args.images + "/right/*.png")
+    utils.sort_files(images0)
+    utils.sort_files(images1)
+
     cv2.namedWindow('frame0', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('frame0', 400, 400)
 
@@ -110,10 +114,10 @@ if __name__ == "__main__":
     print("D0: ", D0)
     print("D1: ", D1)
 
-    np.save("camera_params/K0.npy", K0)
-    np.save("camera_params/K1.npy", K1)
-    np.save("camera_params/D0.npy", D0)
-    np.save("camera_params/D1.npy", D1)
+    np.save(args.output_folder+"/K0.npy", K0)
+    np.save(args.output_folder+"/K1.npy", K1)
+    np.save(args.output_folder+"/D0.npy", D0)
+    np.save(args.output_folder+"/D1.npy", D1)
 
     print("performing stereo calibration...")
     ret, K0, D0, K1, D1, R, T, E, F = cv.stereoCalibrate(objpoints, imgpoints0, imgpoints1, K0, D0, K1, D1, (w, h), criteria, cv.CALIB_FIX_INTRINSIC)
@@ -127,13 +131,13 @@ if __name__ == "__main__":
 
     R0, R1, P0, P1, Q, roi0, roi1 = cv.stereoRectify(K0, D0, K1, D1, (w, h), R, T, flags=cv.CALIB_ZERO_DISPARITY, alpha=0)
 
-    np.save("camera_params/R0.npy", R0)
-    np.save("camera_params/R1.npy", R1)
+    np.save(args.output_foler+"/R0.npy", R0)
+    np.save(args.output_foler+"/R1.npy", R1)
 
-    np.save("camera_params/P0.npy", P0)
-    np.save("camera_params/P1.npy", P1)
+    np.save(args.output_foler+"/P0.npy", P0)
+    np.save(args.output_foler+"/P1.npy", P1)
 
-    np.save("camera_params/Q.npy", Q)
+    np.save(args.output_foler+"/Q.npy", Q)
 
     leftMapX, leftMapY = cv2.initUndistortRectifyMap(K0, D0, R0, P0, (w, h), cv2.CV_32FC1)
     left_rectified = cv2.remap(img0, leftMapX, leftMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
