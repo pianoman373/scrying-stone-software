@@ -4,7 +4,6 @@ import utils
 
 
 def gstreamer_pipeline(
-    sensor_id=0,
     capture_width=3280,
     capture_height=2464,
     display_width=1120,
@@ -13,15 +12,40 @@ def gstreamer_pipeline(
     flip_method=0,
 ):
     return (
-        "nvarguscamerasrc sensor_id=%d ! "
+        "nvarguscamerasrc sensor_id=0 ! "
         "video/x-raw(memory:NVMM), "
         "width=(int)%d, height=(int)%d, framerate=(fraction)%d/1 ! "
         "nvvidconv flip-method=%d ! "
         "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
         "videoconvert ! "
-        "video/x-raw, format=(string)BGR ! appsink drop=True !"
+        "video/x-raw, format=(string)BGR ! appsink drop=True"
         % (
-            sensor_id,
+            capture_width,
+            capture_height,
+            framerate,
+            flip_method,
+            display_width,
+            display_height,
+        )
+    )
+
+def gstreamer_pipeline_2(
+    capture_width=3280,
+    capture_height=2464,
+    display_width=1120,
+    display_height=840,
+    framerate=10,
+    flip_method=0,
+):
+    return (
+        "nvarguscamerasrc sensor_id=1 ! "
+        "video/x-raw(memory:NVMM), "
+        "width=(int)%d, height=(int)%d, framerate=(fraction)%d/1 ! "
+        "nvvidconv flip-method=%d ! "
+        "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
+        "videoconvert ! "
+        "video/x-raw, format=(string)BGR ! appsink drop=True"
+        % (
             capture_width,
             capture_height,
             framerate,
@@ -68,8 +92,13 @@ class CameraFeed:
                     self.cap = gstream_cap
 
             else:
-                print("passing gstreamer args: ", gstreamer_pipeline(index))
-                self.cap = cv2.VideoCapture(gstreamer_pipeline(index), cv2.CAP_GSTREAMER)
+                if index == 0:
+                    print("passing gstreamer args: ", gstreamer_pipeline())
+                    self.cap = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)
+
+                if index == 1:
+                    print("passing gstreamer args: ", gstreamer_pipeline_2())
+                    self.cap = cv2.VideoCapture(gstreamer_pipeline_2(), cv2.CAP_GSTREAMER)
 
         else:
             self.cap = cv2.VideoCapture(self.index)
