@@ -7,28 +7,18 @@ import open3d as o3d
 import disparity
 import undistort
 import utils
+import argparse
 
 # images0 = glob.glob("D:/mav0/cam0/data/*.png")
 # images1 = glob.glob('D:/mav0/cam1/data/*.png')
 # images0 = glob.glob("D:/00/image_0/*.png")
 # images1 = glob.glob('D:/00/image_1/*.png')
-images0 = glob.glob("D:/MovementTest/left/*.png")
-images1 = glob.glob('D:/MovementTest/right/*.png')
-
-def atoi(text):
-    return int(text) if text.isdigit() else text
-def natural_keys(text):
-    return [ atoi(c) for c in re.split('(\d+)',text) ]
-
-
-images0.sort(key=natural_keys)
-images1.sort(key=natural_keys)
 
 # P0 = np.array([7.188560000000e+02,0.000000000000e+00,6.071928000000e+02,0.000000000000e+00,0.000000000000e+00,7.188560000000e+02,1.852157000000e+02,0.000000000000e+00,0.000000000000e+00,0.000000000000e+00,1.000000000000e+00,0.000000000000e+00]).reshape((3,4))
 # P1 = np.array([7.188560000000e+02,0.000000000000e+00,6.071928000000e+02,-3.861448000000e+02,0.000000000000e+00,7.188560000000e+02,1.852157000000e+02,0.000000000000e+00,0.000000000000e+00,0.000000000000e+00,1.000000000000e+00,0.000000000000e+00]).reshape((3,4))
-
-P0 = np.load("camera_params/P0.npy")
-P1 = np.load("camera_params/P1.npy")
+#
+# P0 = np.load("camera_params/P0.npy")
+# P1 = np.load("camera_params/P1.npy")
 
 def extract_features(image, detector='sift', mask=None):
     """
@@ -176,6 +166,23 @@ def generate_pointcloud(depth, color):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Odometry')
+    parser.add_argument('--images', type=str, required=True, help='Folder containing left and right images')
+    parser.add_argument('--calibration', type=str, required=True, help='Folder containing calibration data')
+    args = parser.parse_args()
+
+    images0 = glob.glob(args.images+"/left/*.png")
+    images1 = glob.glob(args.images+"/right/*.png")
+
+    P0 = np.load(args.calibration+"/P0.npy")
+    P1 = np.load(args.calibration+"/P1.npy")
+    K0 = np.load(args.calibration+"/K0.npy")
+    K1 = np.load(args.calibration+"/K1.npy")
+    D0 = np.load(args.calibration+"/D0.npy")
+    D1 = np.load(args.calibration+"/D1.npy")
+    R0 = np.load(args.calibration+"/R0.npy")
+    R1 = np.load(args.calibration+"/R1.npy")
+
     # Decompose left camera projection matrix to get intrinsic k matrix
     k_left, r_left, t_left = decompose_projection_matrix(P0)
 
@@ -213,14 +220,6 @@ if __name__ == "__main__":
     pcd = o3d.geometry.PointCloud()
     vis.add_geometry(line_set)
     vis.add_geometry(pcd)
-
-
-    K0 = np.load('camera_params/K0.npy')
-    K1 = np.load('camera_params/K1.npy')
-    D0 = np.load('camera_params/D0.npy')
-    D1 = np.load('camera_params/D1.npy')
-    R0 = np.load('camera_params/R0.npy')
-    R1 = np.load('camera_params/R1.npy')
 
     while True:
         if id >= len(images0):
