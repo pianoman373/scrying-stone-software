@@ -226,7 +226,6 @@ def odometry(prev_left, current_left, current_right, P0, P1):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Odometry')
-    parser.add_argument('--images', type=str, required=True, help='Folder containing left and right images')
     parser.add_argument('--calibration', type=str, required=True, help='Folder containing calibration data')
     parser.add_argument('--mode', type=str, required=True, help='Camera mode. Either gstreamer_fisheye, gstreamer, webcam, or webcam_offset')
 
