@@ -20,7 +20,7 @@ import argparse
 # P0 = np.load("camera_params/P0.npy")
 # P1 = np.load("camera_params/P1.npy")
 
-def extract_features(image, detector='sift', mask=None):
+def extract_features(image, detector='orb', mask=None):
     """
     To extract features in an image using two different method
     """
@@ -32,7 +32,7 @@ def extract_features(image, detector='sift', mask=None):
     kp, des = det.detectAndCompute(image, mask)
     return kp, des
 
-def match_features(des1, des2, detector='sift', k=2):
+def match_features(des1, des2, detector='orb', k=2):
     """
     To match features of two images using Brute-force method
     """
