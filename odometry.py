@@ -208,7 +208,7 @@ def odometry(prev_left, current_left, current_right, P0, P1):
     zs = T_tot[2, 3]
 
     disp_color = utils.colormap_depth(depth)
-    cv2.imshow("depth", depth * 0.02)
+    cv2.imshow("depth", depth * 0.2)
 
     old_frame_points = old_frame.copy()
     cv2.drawKeypoints(old_frame, image1_points, old_frame_points, color=(0, 0, 255))
@@ -294,6 +294,8 @@ if __name__ == "__main__":
         height, width = right_frame.shape[:2]
 
         position, depth = odometry(old_frame, current_frame, right_frame, P0, P1)
+
+        print(position)
 
         # line_set.points.append([position[0], position[1], position[2]])
         # line_set.colors.append([255, 0, 0])
