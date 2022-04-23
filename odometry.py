@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import camera
 import glob
-import open3d as o3d
 import disparity
 import undistort
 import utils
