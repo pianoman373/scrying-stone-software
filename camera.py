@@ -5,11 +5,11 @@ import utils
 
 def gstreamer_pipeline(
     sensor_id=0,
-    capture_width=3280,
-    capture_height=2464,
-    display_width=1120,
-    display_height=840,
-    framerate=10,
+    capture_width=640,
+    capture_height=360,
+    display_width=640,
+    display_height=360,
+    framerate=60,
     flip_method=0,
 ):
     return (
