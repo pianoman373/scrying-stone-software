@@ -231,9 +231,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    images0 = glob.glob(args.images+"/left/*.png")
-    images1 = glob.glob(args.images+"/right/*.png")
-
     P0 = np.load(args.calibration+"/P0.npy")
     P1 = np.load(args.calibration+"/P1.npy")
     K0 = np.load(args.calibration+"/K0.npy")
