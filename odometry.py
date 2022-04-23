@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import camera
 import glob
-#import open3d as o3d
+import open3d as o3d
 import disparity
 import undistort
 import utils
@@ -161,11 +161,7 @@ def estimate_motion(matches, kp1, kp2, k, depth1, max_depth=3000):
     return rmat, tvec, image1_points, image2_points
 
 
-T_tot = np.eye(4)
-
-def odometry(prev_left, current_left, current_right, P0, P1):
-    global T_tot
-
+def odometry(old_frame, current_frame, right_frame, P0, P1, k_left):
     old_frame_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
     current_frame_gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
     right_frame_gray = cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)
@@ -201,14 +197,10 @@ def odometry(prev_left, current_left, current_right, P0, P1):
     Tmat[:3, :3] = rmat
     Tmat[:3, 3] = tvec.T
 
-    T_tot = T_tot.dot(np.linalg.inv(Tmat))
-
-    xs = T_tot[0, 3]
-    ys = T_tot[1, 3]
-    zs = T_tot[2, 3]
+    T = np.linalg.inv(Tmat)
 
     disp_color = utils.colormap_depth(depth)
-    cv2.imshow("depth", depth * 0.2)
+    cv2.imshow("depth", depth * 0.02)
 
     old_frame_points = old_frame.copy()
     cv2.drawKeypoints(old_frame, image1_points, old_frame_points, color=(0, 0, 255))
@@ -220,122 +212,27 @@ def odometry(prev_left, current_left, current_right, P0, P1):
     cv2.imshow("new frame", current_frame_points)
     cv2.imshow("right frame", right_frame)
 
-    position = [xs, ys, zs]
+    return T, depth
 
-    return position, depth
+def pixel_coord_np(width, height):
+    """
+    Pixel in homogenous coordinate
+    Returns:
+        Pixel coordinate:       [3, width * height]
+    """
+    x = np.linspace(0, width - 1, width).astype(np.int)
+    y = np.linspace(0, height - 1, height).astype(np.int)
+    [x, y] = np.meshgrid(x, y)
+    return np.vstack((x.flatten(), y.flatten(), np.ones_like(x.flatten())))
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Odometry')
-    parser.add_argument('--calibration', type=str, required=True, help='Folder containing calibration data')
-    parser.add_argument('--mode', type=str, required=True, help='Camera mode. Either gstreamer_fisheye, gstreamer, webcam, or webcam_offset')
+def reproject(color, depth, K_inv):
+    height, width = color.shape[:2]
 
-    args = parser.parse_args()
+    colors = cv2.cvtColor(color, cv2.COLOR_BGR2RGB)
+    colors = colors/255.0
 
-    P0 = np.load(args.calibration+"/P0.npy")
-    P1 = np.load(args.calibration+"/P1.npy")
-    K0 = np.load(args.calibration+"/K0.npy")
-    K1 = np.load(args.calibration+"/K1.npy")
-    D0 = np.load(args.calibration+"/D0.npy")
-    D1 = np.load(args.calibration+"/D1.npy")
-    R0 = np.load(args.calibration+"/R0.npy")
-    R1 = np.load(args.calibration+"/R1.npy")
+    pixel_coords = pixel_coord_np(width, height)
 
-    # Decompose left camera projection matrix to get intrinsic k matrix
-    k_left, r_left, t_left = decompose_projection_matrix(P0)
+    cam_coords = K_inv[:3, :3] @ pixel_coords * depth.flatten()
 
-    id = 1000
-
-
-    # vis = o3d.visualization.Visualizer()
-    # vis.create_window()
-    #
-    # points = [
-    #     [0, 0, 0],
-    #     [1, 0, 0],
-    #     [0, 1, 0],
-    #     [0, 0, 1]
-    # ]
-    # lines = [
-    #     [0, 1],
-    #     [0, 2],
-    #     [0, 3]
-    # ]
-    # colors = [
-    #     [1, 0, 0],
-    #     [0, 1, 0],
-    #     [0, 0, 1]
-    # ]
-    # line_set = o3d.geometry.LineSet(
-    #     points=o3d.utility.Vector3dVector(points),
-    #     lines=o3d.utility.Vector2iVector(lines),
-    # )
-    # line_set.colors = o3d.utility.Vector3dVector(colors)
-    # pcd = o3d.geometry.PointCloud()
-    # vis.add_geometry(line_set)
-    # vis.add_geometry(pcd)
-
-    cam0 = camera.CameraFeed(0, args.mode)
-    cam1 = camera.CameraFeed(1, args.mode)
-
-    cv2.waitKey(5000)
-
-    old_frame = cam0.read()
-    cv2.waitKey(10)
-
-    while True:
-
-        current_frame = cam0.read()
-        right_frame = cam1.read()
-
-        old_frame = undistort.undistort_pinhole(old_frame, K0, D0, R0, P0)
-        current_frame = undistort.undistort_pinhole(current_frame, K0, D0, R0, P0)
-        right_frame = undistort.undistort_pinhole(right_frame, K1, D1, R1, P1)
-
-        height, width = right_frame.shape[:2]
-
-        position, depth = odometry(old_frame, current_frame, right_frame, P0, P1)
-
-        print(position)
-
-        # line_set.points.append([position[0], position[1], position[2]])
-        # line_set.colors.append([255, 0, 0])
-        # p = len(line_set.points)
-        # line_set.lines.append([p - 1, p - 2])
-        #
-        # color_raw = o3d.geometry.Image(current_frame)
-        # depth_raw = o3d.geometry.Image(depth.astype(np.float32))
-        # rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
-        #     color_raw, depth_raw)
-        #
-        # cx = k_left[0, 2]
-        # cy = k_left[1, 2]
-        # fx = k_left[0, 0]
-        # fy = k_left[1, 1]
-        # intrinsic = o3d.camera.PinholeCameraIntrinsic(width, height, fx, fy, cx, cy)
-        # new_pcd = pcd.create_from_rgbd_image(
-        #     rgbd_image,
-        #     intrinsic)
-        #
-        # scaling_mat = np.array([[1000, 0, 0, 0], [0, -1000, 0, 0], [0, 0, 1000, 0], [0, 0, 0, 1]])
-        # new_pcd.transform(T_tot.dot(scaling_mat))
-        #
-        # pcd.points = new_pcd.points
-        # pcd.colors = new_pcd.colors
-        #
-        # vis.update_geometry(line_set)
-        # vis.update_geometry(pcd)
-        #
-        # vis.get_view_control().set_constant_z_near(0.1)
-        # vis.get_view_control().set_constant_z_far(1000)
-        # vis.get_view_control().set_lookat(position)
-        # vis.get_view_control().set_zoom(5.0)
-        # vis.poll_events()
-        # vis.update_renderer()
-
-        id += 1
-
-        key = cv2.waitKey(1)
-        if key == 27:  # exit on esc
-            break
-
-        old_frame = current_frame.copy()
+    return cam_coords.T[:, :3], colors
