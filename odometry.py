@@ -199,7 +199,7 @@ def odometry(old_frame, current_frame, right_frame, P0, P1, k_left):
     T = np.linalg.inv(Tmat)
 
     disp_color = utils.colormap_depth(depth)
-    cv2.imshow("depth", depth * 0.02)
+    cv2.imshow("depth", depth * 0.2)
 
     old_frame_points = old_frame.copy()
     cv2.drawKeypoints(old_frame, image1_points, old_frame_points, color=(0, 0, 255))
