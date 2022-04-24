@@ -46,26 +46,29 @@ def server_thread(h_ip):
                 data = connection.recv(1024)
                 print('received data:', data)
 
-                # h, w = color_image.shape[:2]
-                #
-                # print(color_image.astype(np.uint8).flatten())
-                # color_bytes = color_image.astype(np.uint8).flatten().tobytes()
-                # depth_bytes = (depth_image*1000).astype(np.uint32).flatten().tobytes()
-                # header = np.array([w, h], dtype=np.uint32).tobytes()
-                #
-                # packet = header + color_bytes + depth_bytes
-                #
-                # print(w, h)
-                # print(header)
-                # connection.sendall(packet)
+                h, w = color_image.shape[:2]
 
-                j = json.dumps({
-                    'length': len(output_points),
-                    'points': (output_points * 1000).astype(np.int32).flatten().tolist(),
-                    'colors': (output_colors * 255).astype(np.uint8).flatten().tolist()
-                }, separators=(',', ':'))
+                color_bytes = color_image.astype(np.uint8).flatten().tobytes()
+                depth_bytes = (depth_image*1000).astype(np.uint32).flatten().tobytes()
+                header = np.array([w, h], dtype=np.uint32).tobytes()
+                k_bytes = k_left.astype(np.float32).flatten().tobytes()
+                T_bytes = T_tot.astype(np.float32).flatten().tobytes()
 
-                connection.sendall(bytes(j+'\n', 'utf-8'))
+
+                packet = header + k_bytes + T_bytes + color_bytes + depth_bytes
+
+                print("sent ", len(packet), " bytes")
+
+                connection.sendall(packet)
+
+                # j = json.dumps({
+                #     'length': len(output_points),
+                #     'points': (output_points * 1000).astype(np.int32).flatten().tolist(),
+                #     'colors': (output_colors * 255).astype(np.uint8).flatten().tolist(),
+                #     'data': packet.decode('utf-8')
+                # }, separators=(',', ':'))
+                #
+                # connection.sendall(bytes(j+'\n', 'utf-8'))
             except Exception as e:
                 print(e)
                 break
@@ -97,34 +100,6 @@ if __name__ == '__main__':
 
     id = 1
 
-    vis = o3d.visualization.Visualizer()
-    vis.create_window()
-
-    points = [
-        [0, 0, 0],
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 0, 1]
-    ]
-    lines = [
-        [0, 1],
-        [0, 2],
-        [0, 3]
-    ]
-    colors = [
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 0, 1]
-    ]
-    line_set = o3d.geometry.LineSet(
-        points=o3d.utility.Vector3dVector(points),
-        lines=o3d.utility.Vector2iVector(lines),
-    )
-    line_set.colors = o3d.utility.Vector3dVector(colors)
-    pcd = o3d.geometry.PointCloud()
-    vis.add_geometry(line_set)
-    vis.add_geometry(pcd)
-
     cam0 = None
     cam1 = None
     old_frame = None
@@ -134,7 +109,7 @@ if __name__ == '__main__':
 
     if args.dataset:
         images0 = glob.glob(args.dataset + "/left/*.png")
-        images1 = glob.glob(args.dataset + "/right/*png")
+        images1 = glob.glob(args.dataset + "/right/*.png")
         utils.sort_files(images0)
         utils.sort_files(images1)
         current_frame = cv2.imread(images0[0])
@@ -186,63 +161,18 @@ if __name__ == '__main__':
 
         dist = np.linalg.norm(position - old_position)
 
-        if dist > 0.25:
-            #print("caught a jump")
-            T_tot = old_T_tot
-            position = old_position
+        # if dist > 0.25:
+        #     #print("caught a jump")
+        #     T_tot = old_T_tot
+        #     position = old_position
 
-        # append position to line set in open3d
-        line_set.points.append([position[0], position[1], position[2]])
-        line_set.colors.append([255, 0, 0])
-        p = len(line_set.points)
-        line_set.lines.append([p - 1, p - 2])
+        print(position)
 
         color_image = current_frame.copy()
         depth_image = depth.copy()
 
-        # convert to rgbd image
-        color_raw = o3d.geometry.Image(current_frame)
-        depth_raw = o3d.geometry.Image(depth.astype(np.float32))
-        rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
-            color_raw, depth_raw)
-
-        # positions, colors = odometry.reproject(current_frame, depth, k_left_inv)
-        # print(positions)
-
-        # convert to point cloud
-        cx = k_left[0, 2]
-        cy = k_left[1, 2]
-        fx = k_left[0, 0]
-        fy = k_left[1, 1]
-        intrinsic = o3d.camera.PinholeCameraIntrinsic(width, height, fx, fy, cx, cy)
-        new_pcd = pcd.create_from_rgbd_image(
-            rgbd_image,
-            intrinsic,
-            np.eye(4),
-            True
-        )
-
-        scaling_mat = np.array([[1000, 0, 0, 0], [0, -1000, 0, 0], [0, 0, 1000, 0], [0, 0, 0, 1]])
-        new_pcd.transform(T_tot.dot(scaling_mat))
-
-        pcd.points = new_pcd.points
-        pcd.colors = new_pcd.colors
-
-        output_points = np.asarray(new_pcd.points)
-        output_colors = np.asarray(new_pcd.colors)
-
-        vis.update_geometry(line_set)
-        vis.update_geometry(pcd)
-
-        vis.get_view_control().set_constant_z_near(0.1)
-        vis.get_view_control().set_constant_z_far(500)
-        #vis.get_view_control().set_lookat(position)
-        #vis.get_view_control().set_zoom(5.0)
-        vis.poll_events()
-        vis.update_renderer()
-
         id += 1
 
-        key = cv2.waitKey(1)
+        key = cv2.waitKey(1000)
         if key == 27:  # exit on esc
             break
