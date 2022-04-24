@@ -11,10 +11,6 @@ import odometry
 import undistort
 import utils
 import json
-import open3d as o3d
-
-output_points = []
-output_colors = []
 
 color_image = None
 depth_image = None
@@ -166,7 +162,6 @@ if __name__ == '__main__':
         #     T_tot = old_T_tot
         #     position = old_position
 
-        print(position)
 
         color_image = current_frame.copy()
         depth_image = depth.copy()
