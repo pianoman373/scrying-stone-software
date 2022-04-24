@@ -11,6 +11,7 @@ import odometry
 import undistort
 import utils
 import json
+import open3d as o3d
 
 output_points = []
 output_colors = []
@@ -83,33 +84,33 @@ if __name__ == '__main__':
 
     id = 1
 
-    # vis = o3d.visualization.Visualizer()
-    # vis.create_window()
-    #
-    # points = [
-    #     [0, 0, 0],
-    #     [1, 0, 0],
-    #     [0, 1, 0],
-    #     [0, 0, 1]
-    # ]
-    # lines = [
-    #     [0, 1],
-    #     [0, 2],
-    #     [0, 3]
-    # ]
-    # colors = [
-    #     [1, 0, 0],
-    #     [0, 1, 0],
-    #     [0, 0, 1]
-    # ]
-    # line_set = o3d.geometry.LineSet(
-    #     points=o3d.utility.Vector3dVector(points),
-    #     lines=o3d.utility.Vector2iVector(lines),
-    # )
-    # line_set.colors = o3d.utility.Vector3dVector(colors)
-    # pcd = o3d.geometry.PointCloud()
-    # vis.add_geometry(line_set)
-    # vis.add_geometry(pcd)
+    vis = o3d.visualization.Visualizer()
+    vis.create_window()
+
+    points = [
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1]
+    ]
+    lines = [
+        [0, 1],
+        [0, 2],
+        [0, 3]
+    ]
+    colors = [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1]
+    ]
+    line_set = o3d.geometry.LineSet(
+        points=o3d.utility.Vector3dVector(points),
+        lines=o3d.utility.Vector2iVector(lines),
+    )
+    line_set.colors = o3d.utility.Vector3dVector(colors)
+    pcd = o3d.geometry.PointCloud()
+    vis.add_geometry(line_set)
+    vis.add_geometry(pcd)
 
     cam0 = None
     cam1 = None
@@ -135,6 +136,8 @@ if __name__ == '__main__':
 
     T_tot = np.eye(4)
 
+    position = np.array([0, 0, 0])
+
     while True:
         right_frame = None
 
@@ -150,58 +153,73 @@ if __name__ == '__main__':
         current_frame = undistort.undistort_pinhole(current_frame, K0, D0, R0, P0)
         right_frame = undistort.undistort_pinhole(right_frame, K1, D1, R1, P1)
 
+        current_frame_orig = current_frame.copy()
+
         height, width = right_frame.shape[:2]
 
         T, depth = odometry.odometry(old_frame, current_frame, right_frame, P0, P1, k_left)
-        T_tot = T_tot.dot(T)
+
+        old_T_tot = T_tot
+        if id > 10:
+            T_tot = T_tot.dot(T)
+
+        old_position = position
+
 
         xs = T_tot[0, 3]
         ys = T_tot[1, 3]
         zs = T_tot[2, 3]
-        position = [xs, ys, zs]
+        position = np.array([xs, ys, zs])
+
+        dist = np.linalg.norm(position - old_position)
+
+        if dist > 0.25:
+            print("caught a jump")
+            T_tot = old_T_tot
+            position = old_position
 
         print(position)
 
-        # # append position to line set in open3d
-        # line_set.points.append([position[0], position[1], position[2]])
-        # line_set.colors.append([255, 0, 0])
-        # p = len(line_set.points)
-        # line_set.lines.append([p - 1, p - 2])
-        #
-        # # convert to rgbd image
-        # color_raw = o3d.geometry.Image(current_frame)
-        # depth_raw = o3d.geometry.Image(depth.astype(np.float32))
-        # rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
-        #     color_raw, depth_raw)
-        #
-        # # positions, colors = odometry.reproject(current_frame, depth, k_left_inv)
-        # # print(positions)
-        #
-        # # convert to point cloud
-        # cx = k_left[0, 2]
-        # cy = k_left[1, 2]
-        # fx = k_left[0, 0]
-        # fy = k_left[1, 1]
-        # intrinsic = o3d.camera.PinholeCameraIntrinsic(width, height, fx, fy, cx, cy)
-        # new_pcd = pcd.create_from_rgbd_image(
-        #     rgbd_image,
-        #     intrinsic)
-        #
-        # scaling_mat = np.array([[1000, 0, 0, 0], [0, -1000, 0, 0], [0, 0, 1000, 0], [0, 0, 0, 1]])
-        # new_pcd.transform(T_tot.dot(scaling_mat))
-        #
-        # pcd.points = new_pcd.points
-        # pcd.colors = new_pcd.colors
-        #
-        # vis.update_geometry(line_set)
-        # vis.update_geometry(pcd)
-        #
-        # vis.get_view_control().set_constant_z_near(0.1)
-        # vis.get_view_control().set_constant_z_far(1000)
-        # vis.get_view_control().set_lookat(position)
-        # vis.get_view_control().set_zoom(5.0)
-        # vis.poll_events()
-        # vis.update_renderer()
+        # append position to line set in open3d
+        line_set.points.append([position[0], position[1], position[2]])
+        line_set.colors.append([255, 0, 0])
+        p = len(line_set.points)
+        line_set.lines.append([p - 1, p - 2])
+
+        # convert to rgbd image
+        color_raw = o3d.geometry.Image(current_frame)
+        depth_raw = o3d.geometry.Image(depth.astype(np.float32))
+        rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
+            color_raw, depth_raw)
+
+        # positions, colors = odometry.reproject(current_frame, depth, k_left_inv)
+        # print(positions)
+
+        # convert to point cloud
+        cx = k_left[0, 2]
+        cy = k_left[1, 2]
+        fx = k_left[0, 0]
+        fy = k_left[1, 1]
+        intrinsic = o3d.camera.PinholeCameraIntrinsic(width, height, fx, fy, cx, cy)
+        new_pcd = pcd.create_from_rgbd_image(
+            rgbd_image,
+            intrinsic)
+
+        scaling_mat = np.array([[1000, 0, 0, 0], [0, -1000, 0, 0], [0, 0, 1000, 0], [0, 0, 0, 1]])
+        new_pcd.transform(T_tot.dot(scaling_mat))
+
+        pcd.points = new_pcd.points
+        pcd.colors = new_pcd.colors
+
+        vis.update_geometry(line_set)
+        vis.update_geometry(pcd)
+
+        vis.get_view_control().set_constant_z_near(0.1)
+        vis.get_view_control().set_constant_z_far(1000)
+        #vis.get_view_control().set_lookat(position)
+        #vis.get_view_control().set_zoom(5.0)
+        vis.poll_events()
+        vis.update_renderer()
 
         id += 1
 
