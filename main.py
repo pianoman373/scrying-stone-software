@@ -168,6 +168,6 @@ if __name__ == '__main__':
 
         id += 1
 
-        key = cv2.waitKey(1000)
+        key = cv2.waitKey(1)
         if key == 27:  # exit on esc
             break
