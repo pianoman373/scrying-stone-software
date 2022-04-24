@@ -26,5 +26,5 @@ def rotationMatrix():
 if __name__ == "__main__":
     while True:
     	print("Euler angles: {}".format(sensor.euler))
-    	print("Rotation matrix: {}".format(rotationMatrix()))
+    	print("Rotation matrix: \n\r{}".format(rotationMatrix()))
     	time.sleep(1)
