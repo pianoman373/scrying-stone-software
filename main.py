@@ -16,12 +16,12 @@ import open3d as o3d
 output_points = []
 output_colors = []
 
-def server_thread():
-    h_name = socket.gethostname()
-    h_ip = socket.gethostbyname(h_name)
+color_image = None
+depth_image = None
 
-    if len(sys.argv) > 1:
-        h_ip = sys.argv[1]
+send_packet = False
+
+def server_thread(h_ip):
 
     HOST, PORT = h_ip, 7777
 
@@ -46,28 +46,41 @@ def server_thread():
                 data = connection.recv(1024)
                 print('received data:', data)
 
+                # h, w = color_image.shape[:2]
+                #
+                # print(color_image.astype(np.uint8).flatten())
+                # color_bytes = color_image.astype(np.uint8).flatten().tobytes()
+                # depth_bytes = (depth_image*1000).astype(np.uint32).flatten().tobytes()
+                # header = np.array([w, h], dtype=np.uint32).tobytes()
+                #
+                # packet = header + color_bytes + depth_bytes
+                #
+                # print(w, h)
+                # print(header)
+                # connection.sendall(packet)
+
                 j = json.dumps({
                     'length': len(output_points),
-                    'points': output_points.astype(np.int32).flatten().tolist(),
-                    'colors': output_colors.astype(np.int32).flatten().tolist()
+                    'points': (output_points * 1000).astype(np.int32).flatten().tolist(),
+                    'colors': (output_colors * 255).astype(np.uint8).flatten().tolist()
                 }, separators=(',', ':'))
 
-                print(j)
-
                 connection.sendall(bytes(j+'\n', 'utf-8'))
-            except:
+            except Exception as e:
+                print(e)
                 break
 
 if __name__ == '__main__':
-    # t1 = threading.Thread(target=server_thread, args=())
-    # t1.start()
-
     parser = argparse.ArgumentParser(description='Odometry')
     parser.add_argument('--calibration', type=str, required=True, help='Folder containing calibration data')
     parser.add_argument('--mode', type=str, required=False,
                         help='Camera mode. Either gstreamer_fisheye, gstreamer, webcam, or webcam_offset')
     parser.add_argument('--dataset', type=str, required=False, help='Path to dataset')
+    parser.add_argument('--ip', type=str, required=True, help='IP Address to host on')
     args = parser.parse_args()
+
+    t1 = threading.Thread(target=server_thread, args=(args.ip,))
+    t1.start()
 
     P0 = np.load(args.calibration + "/P0.npy")
     P1 = np.load(args.calibration + "/P1.npy")
@@ -174,17 +187,18 @@ if __name__ == '__main__':
         dist = np.linalg.norm(position - old_position)
 
         if dist > 0.25:
-            print("caught a jump")
+            #print("caught a jump")
             T_tot = old_T_tot
             position = old_position
-
-        print(position)
 
         # append position to line set in open3d
         line_set.points.append([position[0], position[1], position[2]])
         line_set.colors.append([255, 0, 0])
         p = len(line_set.points)
         line_set.lines.append([p - 1, p - 2])
+
+        color_image = current_frame.copy()
+        depth_image = depth.copy()
 
         # convert to rgbd image
         color_raw = o3d.geometry.Image(current_frame)
@@ -203,7 +217,10 @@ if __name__ == '__main__':
         intrinsic = o3d.camera.PinholeCameraIntrinsic(width, height, fx, fy, cx, cy)
         new_pcd = pcd.create_from_rgbd_image(
             rgbd_image,
-            intrinsic)
+            intrinsic,
+            np.eye(4),
+            True
+        )
 
         scaling_mat = np.array([[1000, 0, 0, 0], [0, -1000, 0, 0], [0, 0, 1000, 0], [0, 0, 0, 1]])
         new_pcd.transform(T_tot.dot(scaling_mat))
@@ -211,11 +228,14 @@ if __name__ == '__main__':
         pcd.points = new_pcd.points
         pcd.colors = new_pcd.colors
 
+        output_points = np.asarray(new_pcd.points)
+        output_colors = np.asarray(new_pcd.colors)
+
         vis.update_geometry(line_set)
         vis.update_geometry(pcd)
 
         vis.get_view_control().set_constant_z_near(0.1)
-        vis.get_view_control().set_constant_z_far(1000)
+        vis.get_view_control().set_constant_z_far(500)
         #vis.get_view_control().set_lookat(position)
         #vis.get_view_control().set_zoom(5.0)
         vis.poll_events()
