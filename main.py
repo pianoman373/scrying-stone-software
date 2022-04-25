@@ -43,6 +43,9 @@ def server_thread(h_ip):
                 data = connection.recv(1024)
                 print('received data:', data)
 
+                if data == b'reset\r\n':
+                    T_tot = np.eye(4)
+
                 h, w = color_image.shape[:2]
                 magic = 424242
 
