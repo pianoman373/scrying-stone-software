@@ -40,9 +40,8 @@ def server_thread(h_ip):
         while True:
             try:
                 print('waiting for data...')
-                #data = connection.recv(1024)
-                #print('received data:', data)
-                time.sleep(0.5)
+                data = connection.recv(1024)
+                print('received data:', data)
 
                 h, w = color_image.shape[:2]
                 magic = 424242
