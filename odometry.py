@@ -169,6 +169,12 @@ def odometry(old_frame, current_frame, right_frame, P0, P1, k_left):
     kp0, des0 = extract_features(old_frame_gray)
     kp1, des1 = extract_features(current_frame_gray)
 
+    
+    
+    #if (type(des1).__name__ == 'NoneType'):
+    #    return np.eye(4), 
+    
+    
     # Get matches between features detected in two subsequent frames
     matches_unfilt = match_features(des0, des1)
 
