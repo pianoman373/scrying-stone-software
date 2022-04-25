@@ -78,6 +78,8 @@ if __name__ == '__main__':
                         help='Camera mode. Either gstreamer_fisheye, gstreamer, webcam, or webcam_offset')
     parser.add_argument('--dataset', type=str, required=False, help='Path to dataset')
     parser.add_argument('--ip', type=str, required=True, help='IP Address to host on')
+    parser.add_argument('--headless', action='store_true', help='Run without any GUI')
+    parser.add_argument('--maxspeed', type=float, required=False, default=0.25, help='Maximum speed between two frames')
     args = parser.parse_args()
 
     t1 = threading.Thread(target=server_thread, args=(args.ip,))
@@ -118,7 +120,7 @@ if __name__ == '__main__':
         current_frame = cam0.read()
         current_frame = undistort.undistort_pinhole(current_frame, K0, D0, R0, P0)
 
-    cv2.waitKey(10)
+    time.sleep(0.01)
 
     T_tot = np.eye(4)
 
@@ -143,7 +145,7 @@ if __name__ == '__main__':
 
         height, width = right_frame.shape[:2]
         
-        T, depth = odometry.odometry(old_frame, current_frame, right_frame, P0, P1, k_left)
+        T, depth = odometry.odometry(old_frame, current_frame, right_frame, P0, P1, k_left, args.headless)
         if (np.shape(T) != (4, 4)):
             T = np.eye(4)
 
@@ -161,10 +163,10 @@ if __name__ == '__main__':
 
         dist = np.linalg.norm(position - old_position)
 
-        # if dist > 0.25:
-        #     #print("caught a jump")
-        #     T_tot = old_T_tot
-        #     position = old_position
+        if dist > args.maxspeed:
+            #print("caught a jump")
+            T_tot = old_T_tot
+            position = old_position
 
 
         color_image = current_frame.copy()
@@ -172,6 +174,7 @@ if __name__ == '__main__':
 
         id += 1
 
-        key = cv2.waitKey(1)
-        if key == 27:  # exit on esc
-            break
+        if not args.headless:
+            key = cv2.waitKey(1)
+            if key == 27:  # exit on esc
+                break

@@ -160,7 +160,7 @@ def estimate_motion(matches, kp1, kp2, k, depth1, max_depth=3000):
     return rmat, tvec, image1_points, image2_points
 
 
-def odometry(old_frame, current_frame, right_frame, P0, P1, k_left):
+def odometry(old_frame, current_frame, right_frame, P0, P1, k_left, headless=False):
     old_frame_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
     current_frame_gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
     right_frame_gray = cv2.cvtColor(right_frame, cv2.COLOR_BGR2GRAY)
@@ -204,18 +204,19 @@ def odometry(old_frame, current_frame, right_frame, P0, P1, k_left):
 
     T = np.linalg.inv(Tmat)
 
-    disp_color = utils.colormap_depth(depth)
-    cv2.imshow("depth", depth * 0.2)
+    if not headless:
+        disp_color = utils.colormap_depth(depth)
+        cv2.imshow("depth", depth * 0.2)
 
-    old_frame_points = old_frame.copy()
-    cv2.drawKeypoints(old_frame, image1_points, old_frame_points, color=(0, 0, 255))
+        old_frame_points = old_frame.copy()
+        cv2.drawKeypoints(old_frame, image1_points, old_frame_points, color=(0, 0, 255))
 
-    current_frame_points = current_frame.copy()
-    cv2.drawKeypoints(current_frame, image2_points, current_frame_points, color=(0, 0, 255))
+        current_frame_points = current_frame.copy()
+        cv2.drawKeypoints(current_frame, image2_points, current_frame_points, color=(0, 0, 255))
 
-    cv2.imshow("old frame", old_frame_points)
-    cv2.imshow("new frame", current_frame_points)
-    cv2.imshow("right frame", right_frame)
+        cv2.imshow("old frame", old_frame_points)
+        cv2.imshow("new frame", current_frame_points)
+        cv2.imshow("right frame", right_frame)
 
     return T, depth
 
