@@ -29,7 +29,7 @@ def server_thread(h_ip):
 
     tcp_socket.bind(server_address)
 
-    tcp_socket.listen(1)
+    tcp_socket.listen(10)
 
     while True:
         print('waiting for connection...')
