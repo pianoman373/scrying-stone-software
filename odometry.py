@@ -169,6 +169,12 @@ def odometry(old_frame, current_frame, right_frame, P0, P1, k_left):
     kp0, des0 = extract_features(old_frame_gray)
     kp1, des1 = extract_features(current_frame_gray)
 
+    depth = stereo_2_depth(current_frame_gray, right_frame_gray, P0, P1)
+    
+    if (type(des1).__name__ == 'NoneType'):
+        return np.eye(4), depth
+    
+    
     # Get matches between features detected in two subsequent frames
     matches_unfilt = match_features(des0, des1)
 
@@ -178,7 +184,7 @@ def odometry(old_frame, current_frame, right_frame, P0, P1, k_left):
     image1_points = [kp0[m.queryIdx] for m in matches]
     image2_points = [kp1[m.trainIdx] for m in matches]
 
-    depth = stereo_2_depth(current_frame_gray, right_frame_gray, P0, P1)
+    
 
     if len(matches) < 10:
         return [0, 0, 0], depth

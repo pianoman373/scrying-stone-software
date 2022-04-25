@@ -141,8 +141,10 @@ if __name__ == '__main__':
         current_frame_orig = current_frame.copy()
 
         height, width = right_frame.shape[:2]
-
+        
         T, depth = odometry.odometry(old_frame, current_frame, right_frame, P0, P1, k_left)
+        if (np.shape(T) != (4, 4)):
+            T = np.eye(4)
 
         old_T_tot = T_tot
         if id > 10:
@@ -169,6 +171,6 @@ if __name__ == '__main__':
 
         id += 1
 
-        key = cv2.waitKey(1000)
+        key = cv2.waitKey(1)
         if key == 27:  # exit on esc
             break
