@@ -43,10 +43,11 @@ def server_thread(h_ip):
                 print('received data:', data)
 
                 h, w = color_image.shape[:2]
+                magic = 424242
 
                 color_bytes = color_image.astype(np.uint8).flatten().tobytes()
                 depth_bytes = (depth_image*1000).astype(np.uint32).flatten().tobytes()
-                header = np.array([w, h], dtype=np.uint32).tobytes()
+                header = np.array([magic, w, h], dtype=np.uint32).tobytes()
                 k_bytes = k_left.astype(np.float32).flatten().tobytes()
                 T_bytes = T_tot.astype(np.float32).flatten().tobytes()
 
